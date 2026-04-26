@@ -227,5 +227,5 @@ ALLOWED_HOSTS = ['dotr.gov.ph', 'lms.dotr.gov.ph']
 
 ## 📞 Support
 
-DOTR Information Technology Division  
-Email: itd@dotr.gov.ph  
+DOTR Sutil Division  
+Email: bonifaciobiodor@gmail.com  
