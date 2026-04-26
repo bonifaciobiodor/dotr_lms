@@ -1,0 +1,30 @@
+{% extends 'base/base.html' %}
+{% block title %}My Certificates{% endblock %}
+{% block page_title %}My Certificates{% endblock %}
+{% block content %}
+{% if certificates %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;">
+  {% for cert in certificates %}
+  <div class="card" style="overflow:hidden;">
+    <div style="height:8px;background:linear-gradient(90deg,var(--dotr-blue),var(--dotr-blue-mid));"></div>
+    <div style="padding:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+        <div style="font-size:32px;">🏆</div>
+        {% if cert.is_valid %}<span class="badge badge-green"><i class="fas fa-shield-alt"></i> Valid</span>{% else %}<span class="badge badge-red">Revoked</span>{% endif %}
+      </div>
+      <h3 style="font-size:15px;font-weight:700;line-height:1.3;margin-bottom:8px;">{{ cert.enrollment.training.title }}</h3>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;"><i class="fas fa-calendar"></i> Issued: {{ cert.issued_date|date:"M d, Y" }}</div>
+      <div style="font-size:12px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-bottom:16px;">{{ cert.certificate_number }}</div>
+      <a href="{% url 'certificate_detail' pk=cert.pk %}" class="btn btn-primary btn-sm" style="width:100%;justify-content:center;"><i class="fas fa-eye"></i> View Certificate</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="empty-state card" style="padding:80px;">
+  <i class="fas fa-certificate"></i>
+  <p style="font-size:15px;margin-top:12px;">No certificates yet. Complete a training to earn one!</p>
+  <a href="{% url 'training_catalog' %}" class="btn btn-primary" style="margin-top:16px;"><i class="fas fa-graduation-cap"></i> Browse Trainings</a>
+</div>
+{% endif %}
+{% endblock %}

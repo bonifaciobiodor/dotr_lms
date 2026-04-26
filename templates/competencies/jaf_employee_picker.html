@@ -1,0 +1,74 @@
+{% extends 'base/base.html' %}
+{% block title %}Select Employee — Job Analysis Form{% endblock %}
+{% block page_title %}Create Job Analysis Form for Employee{% endblock %}
+
+{% block content %}
+<div style="max-width: 100%;">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+    <a href="{% url 'jaf_list' %}" class="btn btn-outline btn-sm"><i class="fas fa-arrow-left"></i> Back</a>
+    <div>
+      <h2 style="font-size:18px;font-weight:700;margin:0;">Select Employee</h2>
+      <p style="font-size:13px;color:var(--text-muted);margin:2px 0 0;">Choose the employee you will create a Job Analysis Form for.</p>
+    </div>
+  </div>
+
+  <!-- Search filter -->
+  <div style="margin-bottom:12px;">
+    <input type="text" id="emp-search" class="form-control" placeholder="Search by name or position…"
+           oninput="filterEmployees(this.value)" style="max-width:360px;">
+  </div>
+
+  {% if employees %}
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div class="table-wrap">
+      <table id="emp-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Position</th>
+            <th>Division</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for emp in employees %}
+          <tr data-search="{{ emp.get_full_name|lower }} {{ emp.position|lower }}">
+            <td style="color:var(--text-muted);font-size:12px;">{{ forloop.counter }}</td>
+            <td>
+              <div style="font-weight:600;font-size:13.5px;">{{ emp.get_full_name }}</div>
+              <div style="font-size:12px;color:var(--text-muted);">{{ emp.get_role_display }}</div>
+            </td>
+            <td style="font-size:13px;">{{ emp.position|default:"—" }}</td>
+            <td style="font-size:13px;color:var(--text-secondary);">{{ emp.division|default:"—" }}</td>
+            <td>
+              <a href="{% url 'jaf_create_for_employee' employee_pk=emp.pk %}" class="btn btn-primary btn-sm">
+                <i class="fas fa-file-alt"></i> Create JAF
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="card" style="text-align:center;padding:48px 24px;">
+    <i class="fas fa-users" style="font-size:36px;color:var(--text-muted);margin-bottom:12px;opacity:.4;"></i>
+    <p style="font-size:14px;font-weight:600;">No employees found</p>
+    <p style="font-size:13px;color:var(--text-muted);">There are no employees under your supervision or division.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+function filterEmployees(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('#emp-table tbody tr').forEach(function(tr) {
+    tr.style.display = (!q || tr.dataset.search.includes(q)) ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

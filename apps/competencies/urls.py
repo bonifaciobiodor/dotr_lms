@@ -1,0 +1,60 @@
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    # DOTr Competency Framework
+    path('dotr-cf/', views.dotr_cf_list, name='dotr_cf_list'),
+    path('dotr-cf/about/', views.dotr_cf_about, name='dotr_cf_about'),
+    path('dotr-cf/types/', views.dotr_cf_types, name='dotr_cf_types'),
+    path('dotr-cf/levels/', views.dotr_cf_levels, name='dotr_cf_levels'),
+    path('dotr-cf/create/', views.dotr_cf_create, name='dotr_cf_create'),
+    path('dotr-cf/office/', views.dotr_cf_office, name='dotr_cf_office'),
+    path('dotr-cf/<int:pk>/', views.dotr_cf_detail, name='dotr_cf_detail'),
+    path('dotr-cf/<int:pk>/edit/', views.dotr_cf_edit, name='dotr_cf_edit'),
+    path('dotr-cf/<int:pk>/delete/', views.dotr_cf_delete, name='dotr_cf_delete'),
+
+    path('', views.competency_list, name='competency_list'),
+    path('create/', views.competency_create, name='competency_create'),
+    path('<int:pk>/edit/', views.competency_edit, name='competency_edit'),
+    path('my/', views.my_competencies, name='my_competencies'),
+    path('gap-analysis/', views.gap_analysis, name='gap_analysis'),
+    path('employee/<int:user_pk>/', views.employee_competency_view, name='employee_competency_view'),
+    path('employee/<int:user_pk>/update/', views.update_employee_competency, name='update_employee_competency'),
+    path('idp/', views.idp_list, name='idp_list'),
+    path('idp/create/', views.idp_create, name='idp_create'),
+    path('idp/<int:pk>/', views.idp_detail, name='idp_detail'),
+    path('idp/<int:idp_pk>/activity/', views.idp_add_activity, name='idp_add_activity'),
+    path('idp/<int:pk>/approve/', views.idp_approve, name='idp_approve'),
+    path('idp/activity/<int:activity_pk>/toggle/', views.idp_toggle_activity, name='idp_toggle_activity'),
+
+    # Job Description & Job Analysis
+    path('job-descriptions/', views.job_description_list, name='job_description_list'),
+    path('job-descriptions/create/', views.job_description_create, name='job_description_create'),
+    path('job-descriptions/<int:pk>/', views.job_description_detail, name='job_description_detail'),
+    path('job-descriptions/<int:pk>/edit/', views.job_description_edit, name='job_description_edit'),
+    path('job-descriptions/<int:jd_pk>/analyse/', views.job_analysis_create, name='job_analysis_create'),
+    path('job-analysis/<int:pk>/', views.job_analysis_detail, name='job_analysis_detail'),
+    path('job-analysis/<int:pk>/add-competency/', views.job_analysis_add_competency, name='job_analysis_add_competency'),
+    path('job-analysis/<int:pk>/remove/<int:mapping_pk>/', views.job_analysis_remove_competency, name='job_analysis_remove_competency'),
+    path('job-analysis/<int:pk>/finalize/', views.job_analysis_finalize, name='job_analysis_finalize'),
+    path('job-analysis/<int:pk>/apply/', views.job_analysis_apply, name='job_analysis_apply'),
+
+    # DOTr Job Analysis Form (Employee Self-Report)
+    path('jaf/', views.jaf_list, name='jaf_list'),
+    path('jaf/create/', views.jaf_create, name='jaf_create'),
+    path('jaf/create/for/', views.jaf_employee_picker, name='jaf_employee_picker'),
+    path('jaf/create/for/<int:employee_pk>/', views.jaf_create_for_employee, name='jaf_create_for_employee'),
+    path('jaf/<int:pk>/', views.jaf_detail, name='jaf_detail'),
+    path('jaf/<int:pk>/edit/', views.jaf_edit, name='jaf_edit'),
+    path('jaf/<int:pk>/submit/', views.jaf_submit, name='jaf_submit'),
+    path('jaf/<int:pk>/review/', views.jaf_review, name='jaf_review'),
+    path('jaf/<int:pk>/supervisor-review/', views.jaf_supervisor_start_review, name='jaf_supervisor_start_review'),
+    path('jaf/<int:pk>/hrdd-review/', views.jaf_hrdd_start_review, name='jaf_hrdd_start_review'),
+    path('jaf/<int:pk>/approve/', views.jaf_approve, name='jaf_approve'),
+    path('jaf/<int:pk>/reject/', views.jaf_reject, name='jaf_reject'),
+    path('jaf/store/', views.jaf_store_index, name='jaf_store_index'),
+    path('jaf/<int:pk>/store/', views.jaf_store, name='jaf_store'),
+    path('jaf/<int:pk>/export/html/', views.jaf_export_html, name='jaf_export_html'),
+    path('jaf/<int:pk>/export/pdf/', views.jaf_export_pdf, name='jaf_export_pdf'),
+    path('jaf/<int:pk>/export/docx/', views.jaf_export_docx, name='jaf_export_docx'),
+]

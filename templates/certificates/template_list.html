@@ -1,0 +1,85 @@
+{% extends 'base/base.html' %}
+{% block title %}Certificate Templates{% endblock %}
+{% block page_title %}Certificate Templates{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+  <p style="color:var(--text-muted);">Manage and customise certificate layouts. Only one template is active at a time.</p>
+  <a href="{% url 'template_create' %}" class="btn btn-gold"><i class="fas fa-plus"></i> New Template</a>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px;">
+  {% for tmpl in templates %}
+  <div class="card" style="border-top:5px solid {{ tmpl.primary_color }};overflow:hidden;">
+    <!-- Mini certificate preview -->
+    <div style="background:{{ tmpl.primary_color }};padding:14px 18px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="color:white;">
+        <div style="font-size:13px;font-weight:800;">{{ tmpl.header_text|truncatechars:35 }}</div>
+        <div style="font-size:11px;opacity:.7;">{{ tmpl.subheader|truncatechars:40 }}</div>
+      </div>
+      {% if tmpl.is_active %}
+      <span style="background:{{ tmpl.accent_color }};color:{{ tmpl.primary_color }};font-size:10px;font-weight:800;padding:3px 8px;border-radius:99px;white-space:nowrap;">
+        ★ ACTIVE
+      </span>
+      {% endif %}
+    </div>
+    <div style="padding:16px 18px;">
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px;">{{ tmpl.name }}</div>
+      <div style="margin-bottom:10px;">
+        {% if tmpl.layout_type == 'modern' %}
+        <span style="background:#002060;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:.5px;">
+          <i class="fas fa-th-large"></i> Modern Sidebar
+        </span>
+        {% else %}
+        <span style="background:#6b7280;color:#fff;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;letter-spacing:.5px;">
+          <i class="fas fa-align-center"></i> Classic
+        </span>
+        {% endif %}
+      </div>
+      <div style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px;display:flex;flex-direction:column;gap:4px;">
+        <span><i class="fas fa-palette" style="width:14px;"></i> {{ tmpl.get_border_style_display }}</span>
+        <span><i class="fas fa-expand-arrows-alt" style="width:14px;"></i> {{ tmpl.get_orientation_display }}</span>
+        <span><i class="fas fa-user-tie" style="width:14px;"></i> {{ tmpl.signatory1_name|default:"No signatory set" }}</span>
+        <span><i class="fas fa-clock" style="width:14px;"></i> Updated {{ tmpl.updated_at|date:"M d, Y" }}</span>
+        {% if tmpl.assigned_trainings.exists %}
+        <span style="color:var(--dotr-blue-light);"><i class="fas fa-link" style="width:14px;"></i> Assigned to {{ tmpl.assigned_trainings.count }} training{{ tmpl.assigned_trainings.count|pluralize }}</span>
+        {% endif %}
+      </div>
+
+      <!-- Color swatches -->
+      <div style="display:flex;gap:6px;margin-bottom:14px;">
+        <div title="Primary" style="width:24px;height:24px;border-radius:50%;background:{{ tmpl.primary_color }};border:2px solid rgba(0,0,0,.1);"></div>
+        <div title="Accent"  style="width:24px;height:24px;border-radius:50%;background:{{ tmpl.accent_color }};border:2px solid rgba(0,0,0,.1);"></div>
+        <div title="Background" style="width:24px;height:24px;border-radius:50%;background:{{ tmpl.background_color }};border:2px solid rgba(0,0,0,.1);"></div>
+        <span style="font-size:11.5px;color:var(--text-muted);margin-left:4px;align-self:center;">Color scheme</span>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a href="{% url 'template_preview' pk=tmpl.pk %}" class="btn btn-outline btn-sm" target="_blank">
+          <i class="fas fa-eye"></i> Preview
+        </a>
+        <a href="{% url 'template_edit' pk=tmpl.pk %}" class="btn btn-outline btn-sm">
+          <i class="fas fa-edit"></i> Edit
+        </a>
+        {% if not tmpl.is_active %}
+        <form method="post" action="{% url 'template_activate' pk=tmpl.pk %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary btn-sm">
+            <i class="fas fa-check"></i> Set Active
+          </button>
+        </form>
+        {% else %}
+        <span class="badge badge-green" style="align-self:center;font-size:11px;">Currently Active</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div style="grid-column:1/-1;" class="card">
+    <div class="empty-state" style="padding:60px;">
+      <i class="fas fa-palette"></i>
+      <p style="margin-top:12px;">No templates yet. <a href="{% url 'template_create' %}">Create the first one →</a></p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

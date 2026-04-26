@@ -1,0 +1,68 @@
+{% extends 'base/base.html' %}
+{% block title %}PRIME-HRM Compliance{% endblock %}
+{% block page_title %}CSC PRIME-HRM Compliance Report{% endblock %}
+{% block content %}
+<div class="card" style="margin-bottom:18px;">
+  <div class="card-header">
+    <h3><i class="fas fa-clipboard-check" style="color:var(--success);margin-right:8px;"></i>Mandatory Training Compliance</h3>
+    <div style="display:flex;gap:8px;">
+      <span class="badge badge-green">{{ compliance_data|length }} employees tracked</span>
+      <span class="badge badge-red">{{ mandatory_trainings.count }} mandatory programs</span>
+    </div>
+  </div>
+  <div style="padding:16px 20px;background:#f0fdf4;border-bottom:1px solid var(--border);display:flex;gap:20px;flex-wrap:wrap;">
+    {% for t in mandatory_trainings %}
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="width:10px;height:10px;border-radius:50%;background:var(--danger);"></div>
+      <span style="font-size:13px;font-weight:600;">{{ t.title|truncatechars:50 }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Employee</th><th>Division</th><th>Position</th><th>Completed</th><th>Required</th><th>Rate</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for item in compliance_data %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:30px;height:30px;border-radius:50%;background:{% if item.compliant %}rgba(16,185,129,.15){% else %}rgba(239,68,68,.1){% endif %};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:{% if item.compliant %}var(--success){% else %}var(--danger){% endif %};">
+                {{ item.employee.first_name|first }}{{ item.employee.last_name|first }}
+              </div>
+              <div style="font-weight:600;font-size:13.5px;">{{ item.employee.get_full_name }}</div>
+            </div>
+          </td>
+          <td style="font-size:13px;color:var(--text-muted);">{{ item.employee.division|default:"—" }}</td>
+          <td style="font-size:13px;">{{ item.employee.position|default:"—"|truncatechars:30 }}</td>
+          <td style="font-weight:700;color:var(--success);">{{ item.completed }}</td>
+          <td style="font-weight:700;">{{ item.total }}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="progress-bar" style="width:70px;"><div class="progress-fill {% if item.rate >= 100 %}green{% elif item.rate >= 50 %}blue{% else %}{% endif %}" style="width:{{ item.rate }}%;background:{% if item.rate >= 100 %}var(--success){% elif item.rate >= 50 %}var(--dotr-blue-light){% else %}var(--danger){% endif %};"></div></div>
+              <span style="font-weight:700;font-size:13px;">{{ item.rate }}%</span>
+            </div>
+          </td>
+          <td>
+            {% if item.compliant %}<span class="badge badge-green"><i class="fas fa-check-circle"></i> Compliant</span>
+            {% else %}<span class="badge badge-red"><i class="fas fa-times-circle"></i> Non-Compliant</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:30px;">No data available.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Summary Stats -->
+{% with total=compliance_data|length %}
+{% if total > 0 %}
+<div class="stat-grid">
+  <div class="stat-card green"><div class="stat-icon green"><i class="fas fa-check-circle"></i></div><div><div class="stat-value">{% for item in compliance_data %}{% if item.compliant %}1{% endif %}{% endfor %}</div><div class="stat-label">Fully Compliant</div></div></div>
+  <div class="stat-card red"><div class="stat-icon red"><i class="fas fa-times-circle"></i></div><div><div class="stat-value">{% for item in compliance_data %}{% if not item.compliant %}1{% endif %}{% endfor %}</div><div class="stat-label">Non-Compliant</div></div></div>
+  <div class="stat-card gold"><div class="stat-icon gold"><i class="fas fa-clipboard-list"></i></div><div><div class="stat-value">{{ mandatory_trainings.count }}</div><div class="stat-label">Mandatory Trainings</div></div></div>
+</div>
+{% endif %}
+{% endwith %}
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div style="max-width:680px;">
+  <div class="card">
+    <div class="card-header"><h3>{{ title }}</h3></div>
+    <div class="card-body">
+      <form method="post" id="assessment-form">
+        {% csrf_token %}
+
+        <!-- Role selector -->
+        <div class="form-group">
+          <label class="form-label">Assessment Role *</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;">
+
+            <label id="role-final-card" style="border:2px solid var(--dotr-blue-light);border-radius:10px;padding:14px 16px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;background:rgba(37,99,235,.05);">
+              <input type="radio" name="role" value="final_exam" checked onchange="onRoleChange(this.value)" style="margin-top:3px;">
+              <div>
+                <div style="font-weight:700;font-size:13.5px;color:var(--dotr-blue-light);">
+                  <i class="fas fa-graduation-cap" style="margin-right:5px;"></i>Final Exam
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:3px;line-height:1.5;">
+                  Appears after <strong>all modules</strong> are completed. Passing issues the certificate.
+                </div>
+              </div>
+            </label>
+
+            <label id="role-quiz-card" style="border:2px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;display:flex;align-items:flex-start;gap:10px;">
+              <input type="radio" name="role" value="module_quiz" onchange="onRoleChange(this.value)" style="margin-top:3px;">
+              <div>
+                <div style="font-weight:700;font-size:13.5px;color:#d97706;">
+                  <i class="fas fa-question-circle" style="margin-right:5px;"></i>Module Quiz
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:3px;line-height:1.5;">
+                  Short quiz attached to a <strong>specific module</strong>. Fires after that module is completed.
+                </div>
+              </div>
+            </label>
+
+          </div>
+        </div>
+
+        <!-- Module selector (shown only for Module Quiz) -->
+        <div id="module-row" style="display:none;" class="form-group">
+          <label class="form-label">Attach to Module *</label>
+          {% if available_modules %}
+          <select name="module_id" id="module-select" class="form-control">
+            <option value="">— select a module —</option>
+            {% for m in available_modules %}
+            <option value="{{ m.pk }}">Module {{ m.order }}: {{ m.title }}</option>
+            {% endfor %}
+          </select>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+            Modules that already have a quiz are excluded from this list.
+          </div>
+          {% else %}
+          <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;font-size:13px;color:#92400e;">
+            <i class="fas fa-exclamation-triangle" style="margin-right:6px;"></i>
+            All modules already have a quiz attached, or no modules exist yet.
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Title -->
+        <div class="form-group">
+          <label class="form-label">Assessment Title *</label>
+          <input type="text" name="title" class="form-control" required
+                 placeholder="e.g. Module 1 Check-up Quiz / Final Exam: Digital Literacy">
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Assessment Type</label>
+            <select name="assessment_type" class="form-control">
+              {% for val,label in types %}<option value="{{ val }}">{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Time Limit (minutes)</label>
+            <input type="number" name="time_limit_minutes" id="time-limit" class="form-control" value="60" min="5">
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Passing Score (%)</label>
+            <input type="number" name="passing_score" class="form-control" value="{{ training.passing_score }}" min="1" max="100">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Max Attempts</label>
+            <input type="number" name="max_attempts" class="form-control" value="3" min="1">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Instructions / Description</label>
+          <textarea name="description" class="form-control" rows="2"
+                    placeholder="Optional instructions for learners..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:600;">
+            <input type="checkbox" name="shuffle_questions" checked> Shuffle questions for each attempt
+          </label>
+        </div>
+
+        <div style="display:flex;gap:12px;">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Create & Add Questions</button>
+          <a href="{% url 'assessment_list' training_pk=training.pk %}" class="btn btn-outline">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function onRoleChange(role) {
+  var moduleRow  = document.getElementById('module-row');
+  var finalCard  = document.getElementById('role-final-card');
+  var quizCard   = document.getElementById('role-quiz-card');
+  var timeInput  = document.getElementById('time-limit');
+  var modSelect  = document.getElementById('module-select');
+
+  if (role === 'module_quiz') {
+    moduleRow.style.display = '';
+    quizCard.style.border  = '2px solid #d97706';
+    quizCard.style.background = 'rgba(217,119,6,.05)';
+    finalCard.style.border = '2px solid var(--border)';
+    finalCard.style.background = 'transparent';
+    if (timeInput) timeInput.value = 15;
+    if (modSelect) modSelect.required = true;
+  } else {
+    moduleRow.style.display = 'none';
+    finalCard.style.border  = '2px solid var(--dotr-blue-light)';
+    finalCard.style.background = 'rgba(37,99,235,.05)';
+    quizCard.style.border  = '2px solid var(--border)';
+    quizCard.style.background = 'transparent';
+    if (timeInput) timeInput.value = 60;
+    if (modSelect) modSelect.required = false;
+  }
+}
+</script>
+{% endblock %}

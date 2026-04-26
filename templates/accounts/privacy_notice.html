@@ -1,0 +1,226 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data Privacy Notice | DOTR-LMS</title>
+  <link rel="icon" href="{% static 'img/DOTr.png' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #f0f4f8;
+      color: #0f172a;
+      min-height: 100vh;
+      padding: 32px 16px 64px;
+    }
+    .page-wrap { max-width: 860px; margin: 0 auto; }
+    .header-bar {
+      background: linear-gradient(135deg, #001a52 0%, #003087 50%, #0047BD 100%);
+      border-radius: 16px 16px 0 0;
+      padding: 28px 32px;
+      display: flex; align-items: center; gap: 18px;
+      color: white;
+    }
+    .header-icon { font-size: 32px; color: #FDB913; flex-shrink: 0; }
+    .header-title { font-size: 22px; font-weight: 800; }
+    .header-sub { font-size: 13px; opacity: .7; margin-top: 3px; }
+    .card-body {
+      background: white;
+      border-radius: 0 0 16px 16px;
+      padding: 36px 40px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.08);
+    }
+    p { font-size: 14px; color: #475569; line-height: 1.8; margin-bottom: 16px; }
+    h4 { color: #003087; font-size: 15px; font-weight: 700; margin: 28px 0 10px; border-left: 3px solid #FDB913; padding-left: 10px; }
+    ul { padding-left: 22px; margin-bottom: 14px; }
+    ul li { font-size: 14px; color: #475569; line-height: 1.8; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 14px; }
+    th { padding: 10px 14px; text-align: left; background: #f1f5f9; font-weight: 700; color: #475569; border: 1px solid #e2e8f0; }
+    td { padding: 10px 14px; border: 1px solid #e2e8f0; color: #475569; }
+    tr:nth-child(even) td { background: #f8fafc; }
+    .dpo-box {
+      background: #f0f7ff; border: 1px solid #bfdbfe;
+      border-radius: 10px; padding: 16px 20px;
+      font-size: 13.5px; line-height: 1.8;
+    }
+    .dpo-box a { color: #2563eb; }
+    .footer-note { font-size: 12.5px; color: #94a3b8; margin-top: 24px; }
+    .btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 18px; border-radius: 8px; font-size: 13.5px;
+      font-weight: 600; text-decoration: none; cursor: pointer; border: none;
+      font-family: inherit;
+    }
+    .btn-primary { background: #003087; color: white; }
+    .btn-primary:hover { background: #0047BD; }
+    .btn-outline { background: transparent; color: #475569; border: 1.5px solid #e2e8f0; }
+    .btn-outline:hover { background: #f8fafc; }
+    @media (max-width: 600px) {
+      .card-body { padding: 24px 20px; }
+      .header-bar { padding: 20px 20px; }
+      .header-title { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="header-bar">
+    <i class="fas fa-shield-alt header-icon"></i>
+    <div>
+      <div class="header-title">Data Privacy Notice</div>
+      <div class="header-sub">Republic Act No. 10173 — Data Privacy Act of 2012</div>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+      <img src="{% static 'img/DOTr.png' %}" style="height:40px;opacity:.9;" alt="DOTr Logo">
+    </div>
+  </div>
+
+  <div class="card-body">
+
+    <p>
+      The <strong>Department of Transportation (DOTR)</strong> is committed to protecting the privacy and security of personal data
+      in accordance with <strong>Republic Act No. 10173</strong> (Data Privacy Act of 2012) and its Implementing Rules and Regulations (IRR),
+      as well as the guidelines issued by the <strong>National Privacy Commission (NPC)</strong>.
+    </p>
+
+    <h4>1. Personal Information Collected</h4>
+    <p>The DOTR-LMS collects and processes the following personal information:</p>
+    <ul>
+      <li>Full name, employee ID, and position</li>
+      <li>Division and office assignment</li>
+      <li>Email address and contact number</li>
+      <li>Date of hire and employment status</li>
+      <li>Salary grade</li>
+      <li>Profile photograph (optional)</li>
+      <li>Training enrolment, progress, and completion records</li>
+      <li>Assessment scores and competency levels</li>
+      <li>Individual Development Plan (IDP) activities</li>
+      <li>System access logs (IP address, login/logout timestamps)</li>
+    </ul>
+
+    <h4>2. Purpose of Processing</h4>
+    <ul>
+      <li>Manage employee learning and development activities</li>
+      <li>Track training completion and issue digital certificates</li>
+      <li>Conduct competency assessments and gap analysis</li>
+      <li>Generate reports for CSC PRIME-HRM compliance</li>
+      <li>Administer the Individual Development Plan (IDP) process</li>
+      <li>Maintain audit trails for system security and accountability</li>
+      <li>Integrate with the DOTR Human Resource Information System (HRIS)</li>
+    </ul>
+
+    <h4>3. Legal Basis for Processing</h4>
+    <ul>
+      <li><strong>Employment relationship</strong> — processing is necessary for the performance of duties under Civil Service Commission rules</li>
+      <li><strong>Legal obligation</strong> — compliance with CSC PRIME-HRM, COA regulations, and DICT standards</li>
+      <li><strong>Consent</strong> — for optional data such as profile photographs</li>
+    </ul>
+
+    <h4>4. Data Sharing and Disclosure</h4>
+    <p>Your personal data may be shared with:</p>
+    <ul>
+      <li>DOTR Human Resource Information System (HRIS) for synchronisation</li>
+      <li>Civil Service Commission (CSC) for PRIME-HRM compliance reporting</li>
+      <li>Commission on Audit (COA) for audit purposes</li>
+      <li>Authorised DOTR personnel (HR Officers, Supervisors, System Administrators)</li>
+    </ul>
+    <p>We do not sell, trade, or otherwise transfer your personal information to outside parties except as described above.</p>
+
+    <h4>5. Data Retention Schedule</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>Data Type</th>
+          <th>Retention Period</th>
+          <th>Legal Basis</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Training completion records</td>
+          <td>5 years</td>
+          <td>CSC PRIME-HRM</td>
+        </tr>
+        <tr>
+          <td>System access / audit logs</td>
+          <td>3 years</td>
+          <td>COA regulations</td>
+        </tr>
+        <tr>
+          <td>Assessment attempts (non-passing)</td>
+          <td>1 year</td>
+          <td>Operational necessity</td>
+        </tr>
+        <tr>
+          <td>Employee profile data</td>
+          <td>Duration of employment + 5 years</td>
+          <td>Civil Service rules</td>
+        </tr>
+        <tr>
+          <td>Erasure request records</td>
+          <td>1 year after completion</td>
+          <td>NPC compliance proof</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4>6. Your Rights as a Data Subject</h4>
+    <ul>
+      <li><strong>Right to be Informed</strong> — be notified of what data is collected and how it is used</li>
+      <li><strong>Right to Access</strong> — request a copy of your personal data held by DOTR-LMS</li>
+      <li><strong>Right to Rectification</strong> — request correction of inaccurate or incomplete data via your profile page</li>
+      <li><strong>Right to Erasure / Blocking</strong> — request anonymisation of your personal data (subject to legal retention requirements)</li>
+      <li><strong>Right to Object</strong> — object to the processing of your personal data in certain circumstances</li>
+      <li><strong>Right to Data Portability</strong> — request your data in a structured, commonly used format</li>
+      <li><strong>Right to Lodge a Complaint</strong> — file a complaint with the <strong>National Privacy Commission (NPC)</strong> at <a href="https://privacy.gov.ph" target="_blank">privacy.gov.ph</a></li>
+    </ul>
+    <p>To exercise your rights, log in to DOTR-LMS and visit your <strong>Profile page</strong>, or contact the Data Protection Officer below.</p>
+
+    <h4>7. Security Measures</h4>
+    <ul>
+      <li>Encrypted HTTPS communication (TLS/SSL)</li>
+      <li>Password hashing (PBKDF2) with complexity requirements</li>
+      <li>Role-based access control (RBAC) with six permission levels</li>
+      <li>Session timeout after 8 hours of inactivity</li>
+      <li>Audit logging of all access and data modification events</li>
+      <li>Server-side file upload validation (max 5 MB)</li>
+      <li>HTTP security headers (HSTS, XSS protection, Content-Type sniffing prevention)</li>
+    </ul>
+
+    <h4>8. Data Protection Officer</h4>
+    <div class="dpo-box">
+      <strong>Data Protection Officer</strong><br>
+      Franchising Review Staff (FRS)<br>
+      Department of Transportation<br>
+      Columbia Tower, Brgy. Wack-Wack, Mandaluyong City<br>
+      Email: <a href="mailto:dpo@dotr.gov.ph">dpo@dotr.gov.ph</a><br>
+      Website: <a href="https://dotr.gov.ph" target="_blank">https://dotr.gov.ph</a>
+    </div>
+
+    <p class="footer-note">
+      <strong>Effective Date:</strong> January 1, 2025 &nbsp;&bull;&nbsp;
+      <strong>Last Updated:</strong> April 2026 &nbsp;&bull;&nbsp;
+      This notice may be updated as required by law or policy change.
+      Users will be informed of material changes at next login.
+    </p>
+
+    <div class="btn-row">
+      {% if user.is_authenticated %}
+      <a href="{% url 'profile' %}" class="btn btn-primary"><i class="fas fa-user"></i> My Profile</a>
+      <a href="{% url 'dashboard' %}" class="btn btn-outline"><i class="fas fa-home"></i> Dashboard</a>
+      {% else %}
+      <a href="{% url 'login' %}" class="btn btn-primary"><i class="fas fa-sign-in-alt"></i> Back to Login</a>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

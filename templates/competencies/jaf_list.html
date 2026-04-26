@@ -1,0 +1,102 @@
+{% extends 'base/base.html' %}
+{% block title %}Job Analysis Forms{% endblock %}
+{% block page_title %}Job Analysis Forms{% endblock %}
+{% block content %}
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+  <div>
+    <h2 style="font-size:20px;font-weight:700;">Job Analysis Forms</h2>
+    <p style="font-size:13px;color:var(--text-muted);margin-top:2px;">DOTr employee self-report forms documenting duties, competencies, and tools.</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <a href="{% url 'jaf_create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> My Job Analysis Form
+    </a>
+    {% if request.user.role in 'supervisor,admin,hr' %}
+    <a href="{% url 'jaf_employee_picker' %}" class="btn btn-outline">
+      <i class="fas fa-user-edit"></i> Create for Employee
+    </a>
+    {% endif %}
+    {% if request.user.role in 'admin,hr' %}
+    <a href="{% url 'jaf_store_index' %}" class="btn btn-sm" style="background:#064e3b;color:#fff;border:1px solid #065f46;">
+      <i class="fas fa-archive"></i> JAF Store
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+{% if entries %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Employee</th>
+          <th>Position Title</th>
+          <th>Office / Division</th>
+          <th>Status</th>
+          <th>Date</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in entries %}
+        <tr>
+          <td style="color:var(--text-muted);font-size:12px;">{{ forloop.counter }}</td>
+          <td style="font-weight:600;">{{ entry.full_name }}</td>
+          <td style="font-size:13.5px;">{{ entry.position_title }}</td>
+          <td style="font-size:13px;color:var(--text-secondary);">{{ entry.office_service_division|default:"—" }}</td>
+          <td>
+            {% if entry.status == 'approved' %}
+              <span style="display:inline-flex;align-items:center;gap:5px;background:#d1fae5;color:#065f46;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">
+                <i class="fas fa-check-double"></i> Approved
+              </span>
+            {% elif entry.status == 'hrdd_review' %}
+              <span style="display:inline-flex;align-items:center;gap:5px;background:#ede9fe;color:#5b21b6;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">
+                <i class="fas fa-search"></i> Under HRDD Review
+              </span>
+            {% elif entry.status == 'pending_hrdd' %}
+              <span style="display:inline-flex;align-items:center;gap:5px;background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">
+                <i class="fas fa-paper-plane"></i> Submitted to HRDD
+              </span>
+            {% elif entry.status == 'supervisor_review' %}
+              <span style="display:inline-flex;align-items:center;gap:5px;background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">
+                <i class="fas fa-user-clock"></i> Under Supervisor Review
+              </span>
+            {% elif entry.status == 'submitted' %}
+              <span style="display:inline-flex;align-items:center;gap:5px;background:#fef9c3;color:#854d0e;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">
+                <i class="fas fa-paper-plane"></i> Submitted to Supervisor
+              </span>
+            {% elif entry.status == 'rejected' %}
+              <span style="display:inline-flex;align-items:center;gap:5px;background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">
+                <i class="fas fa-undo"></i> Returned
+              </span>
+            {% else %}
+              <span style="display:inline-flex;align-items:center;gap:5px;background:#f1f5f9;color:#475569;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">
+                <i class="fas fa-pen"></i> Draft
+              </span>
+            {% endif %}
+          </td>
+          <td style="font-size:12.5px;color:var(--text-muted);">{{ entry.created_at|date:"M d, Y" }}</td>
+          <td>
+            <a href="{% url 'jaf_detail' pk=entry.pk %}" class="btn btn-outline btn-sm">
+              <i class="fas fa-eye"></i> View
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:56px 32px;">
+  <i class="fas fa-file-alt" style="font-size:40px;color:var(--text-muted);margin-bottom:14px;opacity:.4;"></i>
+  <p style="font-size:15px;font-weight:600;margin-bottom:6px;">No Job Analysis Forms yet</p>
+  <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">Create your first form to document your job roles, duties, and required competencies.</p>
+  <a href="{% url 'jaf_create' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Create Form</a>
+</div>
+{% endif %}
+
+{% endblock %}

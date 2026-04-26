@@ -1,0 +1,53 @@
+{% extends 'base/base.html' %}
+{% block title %}Job Descriptions{% endblock %}
+{% block page_title %}Job Descriptions{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+  <p style="color:var(--text-muted);">Formal position descriptions used as the basis for job analysis and competency profiling.</p>
+  <a href="{% url 'job_description_create' %}" class="btn btn-gold"><i class="fas fa-plus"></i> New Job Description</a>
+</div>
+
+{% if job_descriptions %}
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Position Title</th>
+          <th>Division</th>
+          <th>Salary Grade</th>
+          <th>Employment Status</th>
+          <th>Analyses</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for jd in job_descriptions %}
+        <tr>
+          <td style="font-weight:600;">{{ jd.position_title }}</td>
+          <td>{{ jd.division|default:"—" }}</td>
+          <td>{% if jd.salary_grade %}SG-{{ jd.salary_grade }}{% else %}—{% endif %}</td>
+          <td>{{ jd.employment_status|default:"—" }}</td>
+          <td>
+            <span class="badge badge-blue">{{ jd.analyses.count }}</span>
+          </td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ jd.created_at|date:"M d, Y" }}</td>
+          <td>
+            <a href="{% url 'job_description_detail' pk=jd.pk %}" class="btn btn-outline btn-sm"><i class="fas fa-eye"></i></a>
+            <a href="{% url 'job_description_edit' pk=jd.pk %}" class="btn btn-outline btn-sm"><i class="fas fa-edit"></i></a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="text-align:center;padding:48px 24px;">
+  <i class="fas fa-file-alt" style="font-size:48px;color:var(--text-muted);margin-bottom:12px;"></i>
+  <p style="color:var(--text-muted);margin-bottom:16px;">No job descriptions yet. Create one to start building your competency framework.</p>
+  <a href="{% url 'job_description_create' %}" class="btn btn-gold"><i class="fas fa-plus"></i> Create First Job Description</a>
+</div>
+{% endif %}
+{% endblock %}

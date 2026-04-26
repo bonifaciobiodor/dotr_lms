@@ -1,0 +1,325 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+
+<div style="max-width:980px;margin:0 auto;">
+<form method="post" id="cf-form">
+{% csrf_token %}
+
+<!-- ── Step 1: Office / Service / Division ─────────────────────────────── -->
+<div class="card" style="margin-bottom:20px;" id="office-section">
+  <div class="card-header" style="background:#fffbeb;">
+    <h3>
+      <span style="width:26px;height:26px;border-radius:50%;background:var(--dotr-gold-dark);display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800;margin-right:8px;">1</span>
+      Select Office / Service / Division
+    </h3>
+  </div>
+  <div style="padding:20px 24px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+    <div style="grid-column:1/-1;">
+      <label class="form-label">Office / Service / Division <span style="color:var(--danger);">*</span></label>
+      {% if locked_division %}
+      {# Supervisors are locked to their own division — show as read-only text + hidden input. #}
+      <input type="hidden" name="office_unit_id" value="{{ locked_division.pk }}">
+      <div class="form-control" style="background:#f1f5f9;color:var(--text-secondary);cursor:not-allowed;">
+        <i class="fas fa-building" style="margin-right:6px;color:var(--dotr-gold-dark);"></i>{{ locked_division.name }}
+      </div>
+      <small style="color:var(--text-muted);font-size:12px;">Your division is pre-selected and cannot be changed.</small>
+      {% else %}
+      <select name="office_unit_id" id="office-unit-select" class="form-control">
+        <option value="">— Select an Office / Division —</option>
+        {% for d in existing_offices %}
+        <option value="{{ d.pk }}"
+          {% if competency.division_id == d.pk %}selected{% endif %}>
+          {{ d.name }}
+        </option>
+        {% endfor %}
+      </select>
+      <small style="color:var(--text-muted);font-size:12px;">Divisions are managed in the Accounts module.</small>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Step 2: Mandates ────────────────────────────────────────────────── -->
+<div class="card" id="mandates-section" style="margin-bottom:20px;">
+  <div class="card-header" style="background:#fefce8;">
+    <h3>
+      <span style="width:26px;height:26px;border-radius:50%;background:#ca8a04;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800;margin-right:8px;">2</span>
+      Mandates / Functions of the Office
+    </h3>
+    <button type="button" class="btn btn-outline btn-sm" id="add-mandate-btn">
+      <i class="fas fa-plus"></i> Add Mandate
+    </button>
+  </div>
+  <div style="padding:16px 24px;" id="mandates-container">
+    {% for m in existing_mandates %}
+    <div class="mandate-row" style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
+      <span class="mandate-num" style="flex-shrink:0;min-width:28px;padding-top:9px;font-weight:700;color:var(--text-muted);font-size:13px;">{{ forloop.counter }}.</span>
+      <textarea name="mandate_{{ forloop.counter }}" class="form-control" rows="2" style="flex:1;" placeholder="Describe the mandate or function…">{{ m.description }}</textarea>
+      <button type="button" class="btn btn-sm remove-mandate-btn" style="color:var(--danger);border:1px solid var(--danger);flex-shrink:0;margin-top:4px;"><i class="fas fa-times"></i></button>
+    </div>
+    {% endfor %}
+    <p class="mandate-empty-msg" style="color:var(--text-muted);font-size:13px;font-style:italic;margin:0;{% if existing_mandates %}display:none;{% endif %}">
+      No mandates yet. Click "Add Mandate" to start.
+    </p>
+  </div>
+</div>
+
+<!-- ── Step 3: Competency Details ─────────────────────────────────────── -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-header">
+    <h3>
+      <span style="width:26px;height:26px;border-radius:50%;background:var(--dotr-blue,#1d4ed8);display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800;margin-right:8px;">3</span>
+      Competency Details
+    </h3>
+  </div>
+  <div style="padding:20px 24px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div style="grid-column:1/-1;">
+      <label class="form-label">Competency Name <span style="color:var(--danger);">*</span></label>
+      <input type="text" name="name" class="form-control" required
+             value="{{ competency.name|default:'' }}"
+             placeholder="e.g. Records Management">
+    </div>
+    <div>
+      <label class="form-label">Type <span style="color:var(--danger);">*</span></label>
+      <select name="type" class="form-control" required id="cf-type-select">
+        <option value="">— Select Type —</option>
+        {% for val, label in types %}
+        <option value="{{ val }}" {% if competency.type == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label">Order <small style="color:var(--text-muted);">(display sequence)</small></label>
+      <input type="number" name="order" class="form-control" value="{{ competency.order|default:'0' }}" min="0">
+    </div>
+    <div style="grid-column:1/-1;">
+      <label class="form-label">Description / Tagline <small style="color:var(--text-muted);">(one-line definition shown below the name)</small></label>
+      <textarea name="description" class="form-control" rows="2"
+                placeholder="Short definition or tagline…">{{ competency.description|default:'' }}</textarea>
+    </div>
+  </div>
+</div>
+
+<!-- ── Step 4: Behavioral Indicators ──────────────────────────────────── -->
+{% for level_val, level_label in level_choices %}
+<div class="card" style="margin-bottom:18px;">
+  <div class="card-header" style="
+    {% if level_val == 1 %}background:#eff6ff;
+    {% elif level_val == 2 %}background:#f0fdf4;
+    {% elif level_val == 3 %}background:#fffbeb;
+    {% else %}background:#fdf4ff;{% endif %}">
+    <h3>
+      <span style="width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:800;margin-right:8px;
+        {% if level_val == 1 %}background:#3b82f6;
+        {% elif level_val == 2 %}background:#10b981;
+        {% elif level_val == 3 %}background:#f59e0b;
+        {% else %}background:#a855f7;{% endif %}">{{ level_val }}</span>
+      Level {{ level_val }} — {{ level_label }}
+      <span style="font-size:12px;font-weight:400;opacity:.7;margin-left:6px;">Behavioral Indicators</span>
+    </h3>
+    <button type="button" class="btn btn-outline btn-sm add-indicator-btn" data-level="{{ level_val }}">
+      <i class="fas fa-plus"></i> Add Indicator
+    </button>
+  </div>
+  <div style="padding:16px 20px;" id="indicators-level-{{ level_val }}">
+    {% if indicators_by_level %}
+      {% for lv, data in indicators_by_level.items %}
+        {% if lv == level_val %}
+          {% for item in data.items %}
+          <div class="indicator-row" style="display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;">
+            <input type="text" name="indicator_num_{{ level_val }}_{{ forloop.counter }}"
+                   value="{{ item.indicator_number }}" class="form-control"
+                   style="width:70px;flex-shrink:0;" placeholder="{{ level_val }}.{{ forloop.counter }}">
+            <textarea name="indicator_{{ level_val }}_{{ forloop.counter }}" class="form-control"
+                      rows="2" style="flex:1;" placeholder="Describe the behavioral indicator…">{{ item.description }}</textarea>
+            <button type="button" class="btn btn-sm remove-indicator-btn"
+                    style="color:var(--danger);border:1px solid var(--danger);flex-shrink:0;">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          {% endfor %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+    <p class="empty-msg" style="color:var(--text-muted);font-size:13px;font-style:italic;margin:0;{% if indicators_by_level %}display:none;{% endif %}">
+      No indicators yet. Click "Add Indicator" to start.
+    </p>
+  </div>
+</div>
+{% endfor %}
+
+<!-- Actions -->
+<div style="display:flex;gap:12px;justify-content:flex-end;margin-top:4px;margin-bottom:32px;">
+  <a href="{% url 'dotr_cf_list' %}" class="btn btn-outline"><i class="fas fa-times"></i> Cancel</a>
+  <button type="submit" class="btn btn-gold"><i class="fas fa-save"></i> Save Competency</button>
+</div>
+
+</form>
+</div>
+
+<script>
+(function () {
+
+  /* ── Offices mandates data ─────────────────────────────────────────── */
+  var OFFICE_MANDATES = {{ offices_mandates_json|safe }};
+
+  /* ── Office selector ───────────────────────────────────────────────── */
+  var officeSelect = document.getElementById('office-unit-select');
+
+  function populateMandatesFromOffice(pk) {
+    var mandates = OFFICE_MANDATES[pk] || [];
+    clearMandates();
+    mandates.forEach(function (desc) { addMandateRow(desc); });
+    if (!mandates.length) showMandateEmpty();
+  }
+
+  if (officeSelect) {
+    officeSelect.addEventListener('change', function () {
+      var val = this.value;
+      if (val) {
+        populateMandatesFromOffice(val);
+      } else {
+        clearMandates();
+        showMandateEmpty();
+      }
+    });
+  }
+
+  /* ── Mandate rows ──────────────────────────────────────────────────── */
+  var mandatesContainer = document.getElementById('mandates-container');
+  var addMandateBtn     = document.getElementById('add-mandate-btn');
+
+  function mandateRowCount() {
+    return mandatesContainer.querySelectorAll('.mandate-row').length;
+  }
+
+  function showMandateEmpty() {
+    var em = mandatesContainer.querySelector('.mandate-empty-msg');
+    if (em) em.style.display = '';
+  }
+
+  function hideMandateEmpty() {
+    var em = mandatesContainer.querySelector('.mandate-empty-msg');
+    if (em) em.style.display = 'none';
+  }
+
+  function clearMandates() {
+    mandatesContainer.querySelectorAll('.mandate-row').forEach(function (r) { r.remove(); });
+  }
+
+  function reindexMandates() {
+    mandatesContainer.querySelectorAll('.mandate-row').forEach(function (row, idx) {
+      var n = idx + 1;
+      var num = row.querySelector('.mandate-num');
+      var ta  = row.querySelector('textarea');
+      if (num) num.textContent = n + '.';
+      if (ta)  ta.name = 'mandate_' + n;
+    });
+  }
+
+  function addMandateRow(value) {
+    hideMandateEmpty();
+    var n = mandateRowCount() + 1;
+    var row = document.createElement('div');
+    row.className = 'mandate-row';
+    row.style.cssText = 'display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;';
+    row.innerHTML =
+      '<span class="mandate-num" style="flex-shrink:0;min-width:28px;padding-top:9px;font-weight:700;color:var(--text-muted);font-size:13px;">' + n + '.</span>' +
+      '<textarea name="mandate_' + n + '" class="form-control" rows="2" style="flex:1;" placeholder="Describe the mandate or function…">' + (value || '') + '</textarea>' +
+      '<button type="button" class="btn btn-sm remove-mandate-btn" style="color:var(--danger);border:1px solid var(--danger);flex-shrink:0;margin-top:4px;"><i class="fas fa-times"></i></button>';
+    var emptyMsg = mandatesContainer.querySelector('.mandate-empty-msg');
+    mandatesContainer.insertBefore(row, emptyMsg);
+    row.querySelector('.remove-mandate-btn').addEventListener('click', function () {
+      row.remove();
+      if (!mandateRowCount()) showMandateEmpty();
+      reindexMandates();
+    });
+  }
+
+  if (addMandateBtn) addMandateBtn.addEventListener('click', function () { addMandateRow(''); });
+
+  // Wire remove buttons on server-rendered rows
+  mandatesContainer.querySelectorAll('.remove-mandate-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var row = this.closest('.mandate-row');
+      row.remove();
+      if (!mandateRowCount()) showMandateEmpty();
+      reindexMandates();
+    });
+  });
+
+  /* ── Show/hide office + mandates sections based on type ────────────── */
+  var typeSelect     = document.getElementById('cf-type-select');
+  var officeSection  = document.getElementById('office-section');
+  var mandatesSection = document.getElementById('mandates-section');
+
+  function toggleFunctionalSections() {
+    var show = typeSelect.value === 'functional';
+    if (officeSection)   officeSection.style.display  = show ? '' : 'none';
+    if (mandatesSection) mandatesSection.style.display = show ? '' : 'none';
+  }
+  if (typeSelect) {
+    typeSelect.addEventListener('change', toggleFunctionalSections);
+    toggleFunctionalSections();
+  }
+
+  /* ── Indicator rows ────────────────────────────────────────────────── */
+  var counters = {};
+  document.querySelectorAll('[id^="indicators-level-"]').forEach(function (c) {
+    var level = c.id.replace('indicators-level-', '');
+    counters[level] = c.querySelectorAll('.indicator-row').length;
+  });
+
+  document.querySelectorAll('.add-indicator-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var level = this.dataset.level;
+      counters[level] = (counters[level] || 0) + 1;
+      var i = counters[level];
+      var container = document.getElementById('indicators-level-' + level);
+      var emptyMsg  = container.querySelector('.empty-msg');
+      if (emptyMsg) emptyMsg.style.display = 'none';
+      var row = document.createElement('div');
+      row.className = 'indicator-row';
+      row.style.cssText = 'display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;';
+      row.innerHTML =
+        '<input type="text" name="indicator_num_' + level + '_' + i + '" class="form-control" style="width:70px;flex-shrink:0;" placeholder="' + level + '.' + i + '">' +
+        '<textarea name="indicator_' + level + '_' + i + '" class="form-control" rows="2" style="flex:1;" placeholder="Describe the behavioral indicator…"></textarea>' +
+        '<button type="button" class="btn btn-sm remove-indicator-btn" style="color:var(--danger);border:1px solid var(--danger);flex-shrink:0;"><i class="fas fa-times"></i></button>';
+      container.insertBefore(row, emptyMsg);
+      row.querySelector('.remove-indicator-btn').addEventListener('click', function () {
+        removeIndicatorRow(row, container);
+      });
+    });
+  });
+
+  document.querySelectorAll('.remove-indicator-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      removeIndicatorRow(this.closest('.indicator-row'), this.closest('[id^="indicators-level-"]'));
+    });
+  });
+
+  function removeIndicatorRow(row, container) {
+    row.remove();
+    var remaining = container.querySelectorAll('.indicator-row');
+    if (!remaining.length) {
+      var em = container.querySelector('.empty-msg');
+      if (em) em.style.display = '';
+    }
+    var level = container.id.replace('indicators-level-', '');
+    remaining.forEach(function (r, idx) {
+      var n = idx + 1;
+      var ni = r.querySelector('input[type=text]');
+      var ta = r.querySelector('textarea');
+      if (ni) ni.name = 'indicator_num_' + level + '_' + n;
+      if (ta) ta.name = 'indicator_' + level + '_' + n;
+    });
+    counters[level] = remaining.length;
+  }
+
+})();
+</script>
+{% endblock %}

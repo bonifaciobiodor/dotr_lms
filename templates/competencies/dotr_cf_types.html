@@ -1,0 +1,76 @@
+{% extends 'base/base.html' %}
+{% block title %}Types of Competency{% endblock %}
+{% block page_title %}Types of Competency{% endblock %}
+{% block content %}
+<div style="max-width:860px;margin:0 auto;display:grid;gap:20px;">
+
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-star" style="color:var(--dotr-gold-dark);margin-right:8px;"></i>Core Competencies</h3>
+    </div>
+    <div style="padding:24px 28px;line-height:1.8;color:var(--text-secondary);font-size:14px;">
+      <p>
+        These are the characteristics that collectively lead to desired outcomes in the organization. Sometimes referred to as
+        <em>foundational</em> or <em>organizational competencies</em>, these consist of behaviours that
+        <strong style="color:var(--text-primary);">everyone in the organization must possess regardless of function</strong>
+        because they drive overall desired results.
+      </p>
+      <p style="margin-top:12px;">
+        Core competencies are founded on the organization's mission, vision and values, including culture (the way things are
+        done in an organization). They are <strong style="color:var(--text-primary);">unique to an organization and considered
+        non-transferable</strong>.
+      </p>
+      <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;">
+        {% for c in core_comps %}<span class="badge badge-blue">{{ c.name }}</span>{% empty %}<span style="color:var(--text-muted);font-size:13px;">No core competencies added yet.</span>{% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-crown" style="color:var(--dotr-gold-dark);margin-right:8px;"></i>Leadership Competencies</h3>
+    </div>
+    <div style="padding:24px 28px;line-height:1.8;color:var(--text-secondary);font-size:14px;">
+      <p>
+        These are knowledge, skills and attitudes/behaviours needed to perform management/leadership functions and processes.
+        These are expected of individuals who <strong style="color:var(--text-primary);">supervise staff, or who work through
+        others or a team</strong> to get the job done.
+      </p>
+      <p style="margin-top:12px;">
+        CSC has a set of validated leadership competencies available in the GCD for roles requiring leadership and managerial capabilities.
+      </p>
+      <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;">
+        {% for c in leadership_comps %}<span class="badge badge-blue">{{ c.name }}</span>{% empty %}<span style="color:var(--text-muted);font-size:13px;">No leadership competencies added yet.</span>{% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-puzzle-piece" style="color:var(--dotr-gold-dark);margin-right:8px;"></i>Functional Competencies</h3>
+    </div>
+    <div style="padding:24px 28px;line-height:1.8;color:var(--text-secondary);font-size:14px;">
+      <p>
+        These are behaviours or abilities that pertain to a <strong style="color:var(--text-primary);">specific body of knowledge
+        and skills</strong> required to perform a function or job. It includes abilities to use procedures, techniques and
+        knowledge of a specialized field.
+      </p>
+      <p style="margin-top:12px;">
+        Functional competencies are linked to job roles and the way in which they interact with other roles. These competencies
+        may be transferable if a person accepts a similar job in another organization. Each position has a unique set of
+        functional or technical competencies. The required proficiency level becomes more complex as the position rises in
+        the hierarchy.
+      </p>
+      <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;">
+        {% for c in functional_comps %}<span class="badge badge-blue">{{ c.name }}</span>{% empty %}<span style="color:var(--text-muted);font-size:13px;">No functional competencies added yet.</span>{% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:12px;">
+    <a href="{% url 'dotr_cf_about' %}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> About</a>
+    <a href="{% url 'dotr_cf_levels' %}" class="btn btn-outline"><i class="fas fa-chart-bar"></i> Proficiency Levels</a>
+    <a href="{% url 'dotr_cf_list' %}" class="btn btn-gold"><i class="fas fa-list"></i> View All Competencies</a>
+  </div>
+</div>
+{% endblock %}

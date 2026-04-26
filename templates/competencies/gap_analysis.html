@@ -1,0 +1,73 @@
+{% extends 'base/base.html' %}
+{% block title %}Gap Analysis{% endblock %}
+{% block page_title %}Competency Gap Analysis{% endblock %}
+{% block content %}
+{% if all_users %}
+<div class="card" style="margin-bottom:18px;">
+  <div class="card-header">
+    <h3><i class="fas fa-chart-bar" style="color:var(--danger);margin-right:8px;"></i>Organization-wide Competency Gaps</h3>
+    <span class="badge badge-red">{{ gaps|length }} gaps identified</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Employee</th><th>Division</th><th>Competency</th><th>Current Level</th><th>Target Level</th><th>Gap</th></tr></thead>
+      <tbody>
+        {% for g in gaps %}
+        <tr>
+          <td style="font-weight:600;">{{ g.user.get_full_name }}</td>
+          <td style="font-size:13px;color:var(--text-muted);">{{ g.user.division|default:"—" }}</td>
+          <td>
+            <div style="font-weight:500;font-size:13.5px;">{{ g.competency.name }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">{{ g.competency.get_category_display }}</div>
+          </td>
+          <td><span class="badge badge-gray">Level {{ g.current }}</span></td>
+          <td><span class="badge badge-blue">Level {{ g.target }}</span></td>
+          <td>
+            <span class="badge {% if g.gap >= 3 %}badge-red{% elif g.gap == 2 %}badge-gold{% else %}badge-gray{% endif %}">
+              {{ g.gap }} level{{ g.gap|pluralize }}
+            </span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6"><div class="empty-state"><i class="fas fa-check-circle"></i><p>No competency gaps found. All employees meet their targets!</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card">
+  <div class="card-header"><h3><i class="fas fa-chart-bar" style="color:var(--danger);margin-right:8px;"></i>My Competency Gaps</h3></div>
+  {% if gaps %}
+  <div>
+    {% for ec in gaps %}
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div>
+          <div style="font-weight:700;font-size:14px;">{{ ec.competency.name }}</div>
+          <div style="font-size:12px;color:var(--text-muted);">{{ ec.competency.get_category_display }}</div>
+        </div>
+        <span class="badge {% if ec.get_gap >= 3 %}badge-red{% elif ec.get_gap == 2 %}badge-gold{% else %}badge-gray{% endif %}">Gap: {{ ec.get_gap }} level{{ ec.get_gap|pluralize }}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">Current: Level {{ ec.current_level }}</span>
+        <div class="progress-bar" style="flex:1;height:10px;">
+          <div class="progress-fill" style="width:{% widthratio ec.current_level 4 100 %}%"></div>
+        </div>
+        <div class="progress-bar" style="flex:1;height:10px;background:rgba(37,99,235,.15);">
+          <div style="height:100%;width:{% widthratio ec.target_level 4 100 %}%;background:rgba(37,99,235,.3);border-radius:99px;"></div>
+        </div>
+        <span style="font-size:12px;color:var(--text-muted);white-space:nowrap;">Target: Level {{ ec.target_level }}</span>
+      </div>
+      <div style="margin-top:10px;">
+        <a href="{% url 'training_catalog' %}" class="btn btn-outline btn-sm"><i class="fas fa-graduation-cap"></i> Find Relevant Trainings</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state" style="padding:60px;"><i class="fas fa-check-circle" style="color:var(--success);"></i><p>Great job! You have no competency gaps.</p></div>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

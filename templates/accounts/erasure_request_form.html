@@ -1,0 +1,69 @@
+{% extends 'base/base.html' %}
+{% block title %}Request Data Erasure{% endblock %}
+{% block page_title %}Request Data Erasure{% endblock %}
+{% block content %}
+<div style="max-width:680px;">
+  <div class="card" style="border-left:4px solid #dc2626;">
+    <div class="card-header">
+      <h3><i class="fas fa-trash-alt" style="color:#dc2626;margin-right:8px;"></i>Data Erasure Request</h3>
+    </div>
+    <div class="card-body">
+
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:13.5px;color:#7f1d1d;line-height:1.7;">
+        <i class="fas fa-exclamation-triangle" style="margin-right:6px;"></i>
+        <strong>Before you proceed:</strong> Submitting this request will initiate the anonymisation of your personal data.
+        Your training records, audit logs, and certificates will be <strong>retained as required by law</strong> (CSC, COA)
+        but will no longer be linked to your identity. This action <strong>cannot be undone</strong> once processed.
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        {% if form.errors %}
+        <div class="alert alert-error" style="margin-bottom:16px;">
+          <i class="fas fa-exclamation-circle"></i> Please correct the errors below.
+        </div>
+        {% endif %}
+
+        <div class="form-group" style="margin-bottom:18px;">
+          <label class="form-label" style="font-weight:700;">
+            Reason for Erasure Request <span style="color:#dc2626;">*</span>
+          </label>
+          {{ form.reason }}
+          {% if form.reason.errors %}
+          <div style="color:#dc2626;font-size:12.5px;margin-top:4px;">{{ form.reason.errors }}</div>
+          {% endif %}
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">{{ form.reason.help_text }}</div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:24px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px 16px;">
+          <div style="display:flex;align-items:flex-start;gap:10px;">
+            {{ form.confirm }}
+            <label for="{{ form.confirm.id_for_label }}" style="font-size:13px;color:var(--text-secondary);cursor:pointer;line-height:1.6;">
+              {{ form.confirm.label }}
+            </label>
+          </div>
+          {% if form.confirm.errors %}
+          <div style="color:#dc2626;font-size:12.5px;margin-top:6px;">{{ form.confirm.errors }}</div>
+          {% endif %}
+        </div>
+
+        <div style="display:flex;gap:12px;">
+          <button type="submit" class="btn btn-lg" style="background:#dc2626;color:white;border:none;">
+            <i class="fas fa-paper-plane"></i> Submit Request
+          </button>
+          <a href="{% url 'profile' %}" class="btn btn-outline btn-lg">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <div class="card-body" style="font-size:13px;color:var(--text-muted);line-height:1.7;">
+      <i class="fas fa-info-circle" style="color:#2563eb;margin-right:6px;"></i>
+      Your request will be reviewed by the Data Protection Officer within <strong>15 business days</strong>
+      as required by the NPC. You will be notified via email once a decision is made.
+      For questions, contact <a href="mailto:dpo@dotr.gov.ph" style="color:#2563eb;">dpo@dotr.gov.ph</a>.
+    </div>
+  </div>
+</div>
+{% endblock %}

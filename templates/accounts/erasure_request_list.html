@@ -1,0 +1,97 @@
+{% extends 'base/base.html' %}
+{% block title %}Data Erasure Requests{% endblock %}
+{% block page_title %}Data Erasure Requests{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h3><i class="fas fa-trash-alt" style="color:#dc2626;margin-right:8px;"></i>Data Erasure Requests (RA 10173)</h3>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <form method="get" style="display:flex;gap:8px;">
+        <select name="status" class="form-control" style="width:180px;font-size:13px;" onchange="this.form.submit()">
+          <option value="">All Statuses</option>
+          {% for val, label in status_choices %}
+          <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+  </div>
+
+  {% if page_obj.object_list %}
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:13.5px;">
+      <thead>
+        <tr style="background:#f8fafc;border-bottom:2px solid var(--border);">
+          <th style="padding:11px 16px;text-align:left;font-weight:700;color:var(--text-secondary);">#</th>
+          <th style="padding:11px 16px;text-align:left;font-weight:700;color:var(--text-secondary);">Requester</th>
+          <th style="padding:11px 16px;text-align:left;font-weight:700;color:var(--text-secondary);">Submitted</th>
+          <th style="padding:11px 16px;text-align:left;font-weight:700;color:var(--text-secondary);">Status</th>
+          <th style="padding:11px 16px;text-align:left;font-weight:700;color:var(--text-secondary);">Reviewed By</th>
+          <th style="padding:11px 16px;text-align:left;font-weight:700;color:var(--text-secondary);">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for er in page_obj %}
+        <tr style="border-bottom:1px solid var(--border);" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+          <td style="padding:11px 16px;color:var(--text-muted);">{{ er.pk }}</td>
+          <td style="padding:11px 16px;font-weight:600;">
+            {% if er.requester %}
+              {{ er.requester.get_full_name }}
+              <div style="font-size:12px;color:var(--text-muted);">{{ er.requester.employee_id }}</div>
+            {% else %}
+              <span style="color:var(--text-muted);font-style:italic;">Anonymized</span>
+            {% endif %}
+          </td>
+          <td style="padding:11px 16px;color:var(--text-muted);">{{ er.created_at|date:"M d, Y" }}</td>
+          <td style="padding:11px 16px;">
+            {% if er.status == 'pending' %}
+            <span class="badge badge-gold">Pending</span>
+            {% elif er.status == 'approved' %}
+            <span class="badge badge-blue">Approved</span>
+            {% elif er.status == 'rejected' %}
+            <span class="badge badge-red">Rejected</span>
+            {% elif er.status == 'completed' %}
+            <span class="badge badge-green">Completed</span>
+            {% endif %}
+          </td>
+          <td style="padding:11px 16px;color:var(--text-muted);">
+            {{ er.reviewed_by.get_full_name|default:"—" }}
+          </td>
+          <td style="padding:11px 16px;">
+            {% if er.status == 'pending' %}
+            <a href="{% url 'erasure_request_review' pk=er.pk %}" class="btn btn-outline btn-sm">
+              <i class="fas fa-gavel"></i> Review
+            </a>
+            {% elif er.status == 'approved' %}
+            <a href="{% url 'erasure_request_process' pk=er.pk %}" class="btn btn-sm" style="background:#dc2626;color:white;">
+              <i class="fas fa-cog"></i> Process
+            </a>
+            {% else %}
+            <span style="font-size:12px;color:var(--text-muted);">{{ er.review_date|date:"M d, Y"|default:"—" }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div style="padding:16px;display:flex;justify-content:center;gap:8px;">
+    {% if page_obj.has_previous %}
+    <a href="?page={{ page_obj.previous_page_number }}&status={{ status_filter }}" class="btn btn-outline btn-sm">&laquo; Prev</a>
+    {% endif %}
+    <span style="font-size:13px;color:var(--text-muted);align-self:center;">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+    {% if page_obj.has_next %}
+    <a href="?page={{ page_obj.next_page_number }}&status={{ status_filter }}" class="btn btn-outline btn-sm">Next &raquo;</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="empty-state"><i class="fas fa-check-circle" style="color:#10b981;"></i><p>No erasure requests found.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

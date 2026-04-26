@@ -1,0 +1,115 @@
+{% extends 'base/base.html' %}
+{% block title %}DOTr Competency Framework{% endblock %}
+{% block page_title %}DOTr Competency Framework{% endblock %}
+{% block content %}
+
+{% load static %}
+
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px;">
+  <p style="color:var(--text-muted);">DOTr Competency Framework — Core, Leadership, and Functional Competencies</p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    {% if can_manage %}
+    <a href="{% url 'dotr_cf_create' %}" class="btn btn-gold"><i class="fas fa-plus"></i> Add Competency</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card" style="margin-bottom:18px;">
+  <div style="padding:16px 20px;">
+    <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+      <div>
+        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Type</label>
+        <select name="type" class="form-control" style="min-width:180px;">
+          <option value="">All Types</option>
+          {% for val, label in types %}
+          <option value="{{ val }}" {% if cf_type == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% if offices %}
+      <div>
+        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Office / Division</label>
+        <select name="office" class="form-control" style="min-width:200px;">
+          <option value="">All Offices</option>
+          {% for o in offices %}
+          <option value="{{ o }}" {% if office_filter == o %}selected{% endif %}>{{ o }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <button type="submit" class="btn btn-outline"><i class="fas fa-filter"></i> Filter</button>
+      {% if cf_type or office_filter %}
+      <a href="{% url 'dotr_cf_list' %}" class="btn btn-outline"><i class="fas fa-times"></i> Clear</a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+{% regroup competencies by get_type_display as type_groups %}
+{% for group in type_groups %}
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-header">
+    <h3>
+      <i class="fas fa-{% if 'Core' in group.grouper %}star{% elif 'Leadership' in group.grouper %}crown{% else %}puzzle-piece{% endif %}"
+         style="color:var(--dotr-gold-dark);margin-right:8px;"></i>
+      {{ group.grouper }}
+    </h3>
+    <span class="badge badge-blue">{{ group.list|length }}</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Competency</th>
+          <th>Description</th>
+          {% if group.list.0.office %}<th>Office / Division</th>{% endif %}
+          <th>Indicators</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for comp in group.list %}
+        <tr>
+          <td style="font-weight:600;font-size:13.5px;">
+            <a href="{% url 'dotr_cf_detail' pk=comp.pk %}" style="color:var(--dotr-blue-light);">{{ comp.name }}</a>
+          </td>
+          <td style="font-size:13px;color:var(--text-secondary);max-width:300px;">{{ comp.description|truncatechars:80 }}</td>
+          {% if comp.office %}<td style="font-size:12px;">{{ comp.office }}</td>{% endif %}
+          <td>
+            <div style="display:flex;gap:4px;flex-wrap:wrap;">
+              {% with basic=comp.indicators.all %}
+                {% for level_val in "1234" %}
+                  {% with cnt=comp.indicators.filter %}
+                  {% endwith %}
+                {% endfor %}
+              {% endwith %}
+              <span class="badge" style="background:#dbeafe;color:#1d4ed8;">B: {{ comp.indicators.all|dictsort:"level"|length }}</span>
+            </div>
+          </td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'dotr_cf_detail' pk=comp.pk %}" class="btn btn-outline btn-sm"><i class="fas fa-eye"></i></a>
+              {% if user.role in 'admin,hr' or user.role == 'supervisor' and comp.type == 'functional' and comp.division_id == user.division_id %}
+              <a href="{% url 'dotr_cf_edit' pk=comp.pk %}" class="btn btn-outline btn-sm"><i class="fas fa-edit"></i></a>
+              {% endif %}
+              {% if user.role in 'admin,hr' %}
+              <a href="{% url 'dotr_cf_delete' pk=comp.pk %}" class="btn btn-sm" style="color:var(--danger);border:1px solid var(--danger);"><i class="fas fa-trash"></i></a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% empty %}
+<div class="card" style="padding:40px;text-align:center;color:var(--text-muted);">
+  <i class="fas fa-folder-open" style="font-size:40px;margin-bottom:12px;display:block;"></i>
+  No competencies found.
+  {% if can_manage %}<br><a href="{% url 'dotr_cf_create' %}" class="btn btn-gold" style="margin-top:12px;"><i class="fas fa-plus"></i> Add First Competency</a>{% endif %}
+</div>
+{% endfor %}
+
+{% endblock %}

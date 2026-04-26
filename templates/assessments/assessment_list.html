@@ -1,0 +1,138 @@
+{% extends 'base/base.html' %}
+{% block title %}Assessments{% endblock %}
+{% block page_title %}Assessments — {{ training.title|truncatechars:50 }}{% endblock %}
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'training_detail' pk=training.pk %}">{{ training.title|truncatechars:40 }}</a>
+  <i class="fas fa-chevron-right" style="font-size:10px;"></i>
+  <span>Assessments</span>
+</div>
+
+<!-- Summary row -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+  <div style="display:flex;gap:12px;flex-wrap:wrap;">
+    <span style="font-size:13px;color:var(--text-muted);">
+      <i class="fas fa-graduation-cap" style="color:var(--dotr-blue-light);margin-right:4px;"></i>
+      {{ final_exams }} Final Exam{{ final_exams|pluralize }}
+    </span>
+    <span style="font-size:13px;color:var(--text-muted);">
+      <i class="fas fa-question-circle" style="color:#d97706;margin-right:4px;"></i>
+      {{ module_quizzes }} Module Quiz{{ module_quizzes|pluralize:"zes" }}
+    </span>
+  </div>
+  <a href="{% url 'assessment_create' training_pk=training.pk %}" class="btn btn-gold">
+    <i class="fas fa-plus"></i> Create Assessment
+  </a>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Role</th>
+          <th>Attached Module</th>
+          <th>Type</th>
+          <th>Questions</th>
+          <th>Time</th>
+          <th>Passing</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in assessments %}
+        <tr>
+          <td style="font-weight:600;">{{ a.title }}</td>
+          <td>
+            {% if a.role == 'module_quiz' %}
+            <span style="background:#fef3c7;color:#92400e;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:700;">
+              <i class="fas fa-question-circle"></i> Module Quiz
+            </span>
+            {% else %}
+            <span style="background:#dbeafe;color:#1e40af;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:700;">
+              <i class="fas fa-graduation-cap"></i> Final Exam
+            </span>
+            {% endif %}
+          </td>
+          <td style="font-size:13px;">
+            {% if a.module %}
+            <span style="color:var(--text-secondary);">
+              <i class="fas fa-layer-group" style="color:#d97706;margin-right:4px;font-size:11px;"></i>
+              Module {{ a.module.order }}: {{ a.module.title|truncatechars:30 }}
+            </span>
+            {% else %}
+            <span style="color:var(--text-muted);">—</span>
+            {% endif %}
+          </td>
+          <td><span class="badge badge-blue">{{ a.get_assessment_type_display }}</span></td>
+          <td style="text-align:center;">{{ a.question_count }}</td>
+          <td style="text-align:center;">{{ a.time_limit_minutes }} min</td>
+          <td style="text-align:center;">{{ a.passing_score }}%</td>
+          <td>
+            {% if a.is_active %}
+            <span class="badge badge-green">Active</span>
+            {% else %}
+            <span class="badge badge-gray">Inactive</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'assessment_questions' pk=a.pk %}" class="btn btn-outline btn-sm">
+                <i class="fas fa-list"></i> Questions
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9">
+            <div class="empty-state">
+              <i class="fas fa-question-circle"></i>
+              <p>No assessments yet.</p>
+              <a href="{% url 'assessment_create' training_pk=training.pk %}" class="btn btn-primary btn-sm">
+                Create Assessment
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Guide card -->
+<div class="card" style="margin-top:16px;">
+  <div class="card-header">
+    <h3><i class="fas fa-info-circle" style="color:var(--dotr-blue-light);margin-right:6px;"></i>How Assessments Work</h3>
+  </div>
+  <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div>
+      <div style="font-weight:700;font-size:13px;color:#d97706;margin-bottom:6px;">
+        <i class="fas fa-question-circle"></i> Module Quiz
+      </div>
+      <ul style="font-size:13px;color:var(--text-secondary);line-height:1.8;padding-left:18px;">
+        <li>Attached to a specific module</li>
+        <li>Fires automatically after the learner marks that module complete</li>
+        <li>Pass or fail — learner continues to the next module either way</li>
+        <li>Result shown for self-check; no certificate issued</li>
+        <li>One quiz per module maximum</li>
+      </ul>
+    </div>
+    <div>
+      <div style="font-weight:700;font-size:13px;color:var(--dotr-blue-light);margin-bottom:6px;">
+        <i class="fas fa-graduation-cap"></i> Final Exam
+      </div>
+      <ul style="font-size:13px;color:var(--text-secondary);line-height:1.8;padding-left:18px;">
+        <li>Fires after <strong>all modules</strong> are completed</li>
+        <li>Passing the exam marks the training as completed</li>
+        <li>Certificate is automatically issued on pass</li>
+        <li>Failing allows retry up to max attempts</li>
+        <li>One active Final Exam per training is recommended</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

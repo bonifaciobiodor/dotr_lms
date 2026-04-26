@@ -1,0 +1,195 @@
+{% extends 'base/base.html' %}
+{% block title %}Review Job Analysis Form — {{ entry.full_name }}{% endblock %}
+{% block page_title %}Supervisor Review{% endblock %}
+
+{% block content %}
+<style>
+  .jaf-wrap { max-width: 900px; }
+  .jaf-section-header {
+    background: #1e3a8a; color: #fff; text-align: center;
+    padding: 9px 16px; font-weight: 700; font-size: 13.5px;
+  }
+  .jaf-field-row { display: grid; grid-template-columns: 200px 1fr; border-bottom: 1px solid var(--border); }
+  .jaf-field-label { font-weight: 700; font-size: 13px; padding: 10px 14px; border-right: 1px solid var(--border); }
+  .jaf-field-value { padding: 10px 14px; font-size: 13.5px; }
+  .skill-table { width: 100%; border-collapse: collapse; }
+  .skill-table th, .skill-table td { border: 1px solid var(--border); padding: 8px 10px; font-size: 13px; }
+  .skill-table th { background: #f1f5f9; font-weight: 700; text-align: center; font-size: 12px; }
+  .skill-table td.level-col { text-align: center; width: 12%; }
+  .skill-table select { width: 100%; border: none; outline: none; font-size: 13px; background: transparent; cursor: pointer; }
+  .skill-table select:focus { background: #eff6ff; border-radius: 3px; outline: 2px solid #93c5fd; }
+  .skill-table input[type=radio] { accent-color: #1e3a8a; transform: scale(1.2); }
+  .add-row-btn { font-size: 12px; color: var(--dotr-blue-light); background: none; border: 1px dashed #93c5fd; border-radius: 6px; padding: 5px 12px; cursor: pointer; margin-top: 6px; }
+  .add-row-btn:hover { background: #eff6ff; }
+  .remove-row-btn { background: none; border: none; color: var(--danger); cursor: pointer; padding: 2px 6px; font-size: 13px; opacity: .6; }
+  .remove-row-btn:hover { opacity: 1; }
+</style>
+
+<div class="jaf-wrap">
+
+  <!-- Back link -->
+  <div style="margin-bottom:14px;">
+    <a href="{% url 'jaf_detail' pk=entry.pk %}" class="btn btn-outline btn-sm">
+      <i class="fas fa-arrow-left"></i> Back to Form
+    </a>
+  </div>
+
+  <!-- Notice -->
+  <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#1e40af;">
+    <i class="fas fa-info-circle" style="margin-right:6px;"></i>
+    You are reviewing this form as <strong>Supervisor / Division Head</strong>.
+    Fill in the <strong>Required Competencies</strong> section below based on the duties described by the employee,
+    then forward the form to <strong>HRDD</strong> for review and final approval.
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden;">
+
+    <!-- Form summary header -->
+    <div style="background:#1e3a8a;color:#fff;text-align:center;padding:10px;font-size:15px;font-weight:800;letter-spacing:.4px;">
+      JOB ANALYSIS FORM — SUPERVISOR REVIEW
+    </div>
+
+    <!-- Employee info (read-only) -->
+    <div class="jaf-field-row"><div class="jaf-field-label">Full Name</div><div class="jaf-field-value">{{ entry.full_name }}</div></div>
+    <div class="jaf-field-row"><div class="jaf-field-label">Position Title</div><div class="jaf-field-value">{{ entry.position_title }}</div></div>
+    <div class="jaf-field-row"><div class="jaf-field-label">Office/Service/Division</div><div class="jaf-field-value">{{ entry.office_service_division|default:"—" }}</div></div>
+    <div class="jaf-field-row" style="border-bottom:2px solid var(--border);"><div class="jaf-field-label">Section/Project/Unit</div><div class="jaf-field-value">{{ entry.section_project_unit|default:"—" }}</div></div>
+
+    <!-- Main duties summary (read-only) -->
+    <div class="jaf-section-header">MAIN DUTIES AND RESPONSIBILITIES <span style="font-weight:400;font-size:12px;">(Employee's declaration — read only)</span></div>
+    <div style="padding:14px 16px;border-bottom:2px solid var(--border);font-size:13px;white-space:pre-line;color:var(--text-secondary);max-height:200px;overflow-y:auto;line-height:1.7;">
+      {{ entry.main_duties|default:"(none)" }}
+    </div>
+
+    <!-- Required Competencies — editable by supervisor -->
+    <div class="jaf-section-header">REQUIRED COMPETENCIES <span style="font-weight:400;font-size:12px;">(To be filled by the immediate supervisor)</span></div>
+    <div style="padding:14px;border-bottom:2px solid var(--border);">
+      <form method="post" id="review-form">
+        {% csrf_token %}
+        <table class="skill-table" id="skill-table">
+          <thead>
+            <tr>
+              <th style="width:4%;">NO.</th>
+              <th style="width:44%;">COMPETENCY</th>
+              <th class="level-col">BASIC</th>
+              <th class="level-col">INTERMEDIATE</th>
+              <th class="level-col">ADVANCED</th>
+              <th class="level-col">SUPERIOR</th>
+              <th style="width:4%;"></th>
+            </tr>
+          </thead>
+          <tbody id="skill-body">
+            {% if existing_skills %}
+              {% for s in existing_skills %}
+              <tr>
+                <td style="text-align:center;color:var(--text-muted);">{{ forloop.counter }}</td>
+                <td>
+                  <select name="competency_{{ forloop.counter }}">
+                    <option value="">— Select Competency —</option>
+                    {% for group in comp_groups %}
+                    <optgroup label="{{ group.label }}">
+                      {% for comp in group.items %}
+                      <option value="{{ comp.pk }}" {% if comp.pk == s.competency_id %}selected{% endif %}>{{ comp.name }}</option>
+                      {% endfor %}
+                    </optgroup>
+                    {% endfor %}
+                  </select>
+                </td>
+                <td class="level-col"><input type="radio" name="skill_level_{{ forloop.counter }}" value="basic" {% if s.proficiency_level == 'basic' %}checked{% endif %}></td>
+                <td class="level-col"><input type="radio" name="skill_level_{{ forloop.counter }}" value="intermediate" {% if s.proficiency_level == 'intermediate' %}checked{% endif %}></td>
+                <td class="level-col"><input type="radio" name="skill_level_{{ forloop.counter }}" value="advanced" {% if s.proficiency_level == 'advanced' %}checked{% endif %}></td>
+                <td class="level-col"><input type="radio" name="skill_level_{{ forloop.counter }}" value="superior" {% if s.proficiency_level == 'superior' %}checked{% endif %}></td>
+                <td><button type="button" class="remove-row-btn" onclick="removeSkillRow(this)"><i class="fas fa-times"></i></button></td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              {% for i in "1234567890" %}
+              <tr>
+                <td style="text-align:center;color:var(--text-muted);">{{ forloop.counter }}</td>
+                <td>
+                  <select name="competency_{{ forloop.counter }}">
+                    <option value="">— Select Competency —</option>
+                    {% for group in comp_groups %}
+                    <optgroup label="{{ group.label }}">
+                      {% for comp in group.items %}
+                      <option value="{{ comp.pk }}">{{ comp.name }}</option>
+                      {% endfor %}
+                    </optgroup>
+                    {% endfor %}
+                  </select>
+                </td>
+                <td class="level-col"><input type="radio" name="skill_level_{{ forloop.counter }}" value="basic"></td>
+                <td class="level-col"><input type="radio" name="skill_level_{{ forloop.counter }}" value="intermediate"></td>
+                <td class="level-col"><input type="radio" name="skill_level_{{ forloop.counter }}" value="advanced"></td>
+                <td class="level-col"><input type="radio" name="skill_level_{{ forloop.counter }}" value="superior"></td>
+                <td><button type="button" class="remove-row-btn" onclick="removeSkillRow(this)"><i class="fas fa-times"></i></button></td>
+              </tr>
+              {% endfor %}
+            {% endif %}
+          </tbody>
+        </table>
+        <button type="button" class="add-row-btn" onclick="addSkillRow()">
+          <i class="fas fa-plus"></i> Add Row
+        </button>
+
+        <!-- Submit bar -->
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+          <button type="submit" class="btn btn-primary"
+                  onclick="return confirm('Forward this form to HRDD for review and approval? Make sure competencies are complete.');">
+            <i class="fas fa-paper-plane"></i> Save &amp; Forward to HRDD
+          </button>
+          <a href="{% url 'jaf_detail' pk=entry.pk %}" class="btn btn-outline">Cancel</a>
+          <span style="font-size:12px;color:var(--text-muted);margin-left:auto;">
+            Reviewing as: <strong>{{ request.user.get_full_name }}</strong>
+          </span>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Serialize competency options from server-rendered HTML for use in dynamic rows
+const _firstSelect = document.querySelector('#skill-body select');
+const COMPETENCY_OPTIONS_HTML = _firstSelect ? _firstSelect.innerHTML : '';
+
+let skillCount = document.querySelectorAll('#skill-body tr').length;
+
+function renumberRows(tbody) {
+  Array.from(tbody.querySelectorAll('tr')).forEach(function(tr, idx) {
+    tr.querySelector('td:first-child').textContent = idx + 1;
+  });
+}
+
+function addSkillRow() {
+  skillCount++;
+  const n = skillCount;
+  const tbody = document.getElementById('skill-body');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="text-align:center;color:var(--text-muted);">${tbody.rows.length + 1}</td>
+    <td><select name="competency_${n}">${COMPETENCY_OPTIONS_HTML}</select></td>
+    <td class="level-col"><input type="radio" name="skill_level_${n}" value="basic"></td>
+    <td class="level-col"><input type="radio" name="skill_level_${n}" value="intermediate"></td>
+    <td class="level-col"><input type="radio" name="skill_level_${n}" value="advanced"></td>
+    <td class="level-col"><input type="radio" name="skill_level_${n}" value="superior"></td>
+    <td><button type="button" class="remove-row-btn" onclick="removeSkillRow(this)"><i class="fas fa-times"></i></button></td>`;
+  tbody.appendChild(tr);
+}
+
+function removeSkillRow(btn) {
+  btn.closest('tr').remove();
+  renumberRows(document.getElementById('skill-body'));
+}
+
+document.getElementById('review-form').addEventListener('submit', function() {
+  document.querySelectorAll('#skill-body tr').forEach(function(tr, idx) {
+    const n = idx + 1;
+    const sel = tr.querySelector('select');
+    if (sel) sel.name = 'competency_' + n;
+    tr.querySelectorAll('input[type=radio]').forEach(function(r) { r.name = 'skill_level_' + n; });
+  });
+});
+</script>
+{% endblock %}

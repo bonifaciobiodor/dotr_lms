@@ -1,0 +1,117 @@
+{% extends 'base/base.html' %}
+{% block title %}User Manual{% endblock %}
+{% block page_title %}User Manual{% endblock %}
+{% block content %}
+<style>
+  .manual-wrap { max-width: 960px; }
+
+  /* ── Role badge ── */
+  .role-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius:99px; font-size:12px; font-weight:700; }
+  .role-admin      { background:#fee2e2; color:#991b1b; }
+  .role-hr         { background:#dcfce7; color:#166534; }
+  .role-supervisor { background:#fef9c3; color:#854d0e; }
+  .role-trainer    { background:#ede9fe; color:#5b21b6; }
+  .role-executive  { background:#f3e8ff; color:#6b21a8; }
+  .role-employee   { background:#dbeafe; color:#1e40af; }
+
+  /* ── TOC sidebar ── */
+  .manual-layout { display:grid; grid-template-columns:220px 1fr; gap:24px; align-items:start; }
+  @media(max-width:768px){ .manual-layout { grid-template-columns:1fr; } .manual-toc-sticky { display:none; } }
+  .manual-toc-sticky { position:sticky; top:76px; }
+  .manual-toc-card { background:#f8fafc; border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
+  .manual-toc-card h4 { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:1px; color:var(--text-muted); margin-bottom:10px; }
+  .manual-toc-card ol { margin:0; padding-left:18px; }
+  .manual-toc-card li { font-size:12.5px; line-height:1.9; }
+  .manual-toc-card a { color:var(--dotr-blue-light); text-decoration:none; }
+  .manual-toc-card a:hover { text-decoration:underline; }
+  .manual-toc-card .toc-active { color:var(--dotr-gold); font-weight:700; }
+
+  /* ── Manual body typography ── */
+  .manual-body h1 { font-size:24px; font-weight:800; color:var(--dotr-blue); margin:28px 0 8px; border-bottom:3px solid var(--dotr-gold); padding-bottom:6px; }
+  .manual-body h2 { font-size:19px; font-weight:700; color:var(--dotr-blue-mid); margin:32px 0 8px; padding:10px 14px; background:#f0f4ff; border-left:4px solid var(--dotr-blue-mid); border-radius:0 8px 8px 0; }
+  .manual-body h3 { font-size:15px; font-weight:700; color:var(--text-primary); margin:20px 0 6px; }
+  .manual-body h4 { font-size:13.5px; font-weight:700; color:var(--text-secondary); margin:14px 0 4px; }
+  .manual-body p  { font-size:13.5px; line-height:1.85; color:var(--text-secondary); margin-bottom:10px; }
+  .manual-body ul, .manual-body ol { padding-left:22px; margin-bottom:12px; }
+  .manual-body li { font-size:13.5px; line-height:1.85; color:var(--text-secondary); margin-bottom:3px; }
+  .manual-body table { width:100%; border-collapse:collapse; margin:14px 0; font-size:13px; }
+  .manual-body table th { background:var(--dotr-blue); color:white; padding:9px 12px; text-align:left; font-weight:600; }
+  .manual-body table td { padding:8px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary); vertical-align:top; }
+  .manual-body table tr:nth-child(even) td { background:#f8fafc; }
+  .manual-body code { background:#f1f5f9; border-radius:4px; padding:2px 6px; font-family:'DM Mono',monospace; font-size:12px; color:var(--dotr-blue-mid); }
+  .manual-body pre { background:#1e293b; color:#e2e8f0; border-radius:8px; padding:16px; overflow-x:auto; margin:12px 0; }
+  .manual-body pre code { background:none; color:inherit; padding:0; font-size:12.5px; }
+  .manual-body blockquote { border-left:4px solid var(--dotr-gold); background:#fffbeb; padding:10px 16px; border-radius:0 8px 8px 0; margin:12px 0; }
+  .manual-body blockquote p { color:#78350f; margin:0; font-size:13px; }
+  .manual-body a { color:var(--dotr-blue-light); }
+  .manual-body hr { border:none; border-top:1px solid var(--border); margin:24px 0; }
+</style>
+
+<div class="manual-wrap">
+
+  <!-- ── Header bar: role badge + version ── -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+    <span style="font-size:12px;color:var(--text-muted);">Viewing as:</span>
+    {% if user.role == 'admin' %}
+      <span class="role-badge role-admin"><i class="fas fa-shield-alt"></i> System Administrator</span>
+    {% elif user.role == 'hr' %}
+      <span class="role-badge role-hr"><i class="fas fa-user-tie"></i> HR / L&D Officer</span>
+    {% elif user.role == 'supervisor' %}
+      <span class="role-badge role-supervisor"><i class="fas fa-user-check"></i> Supervisor</span>
+    {% elif user.role == 'trainer' %}
+      <span class="role-badge role-trainer"><i class="fas fa-chalkboard-teacher"></i> Trainer</span>
+    {% elif user.role == 'executive' %}
+      <span class="role-badge role-executive"><i class="fas fa-chart-pie"></i> Executive</span>
+    {% else %}
+      <span class="role-badge role-employee"><i class="fas fa-user"></i> Employee</span>
+    {% endif %}
+    <span style="font-size:11px;color:var(--text-muted);margin-left:auto;"><i class="fas fa-file-alt"></i> DOTr LMS User Manual v1.0 — showing sections for your role only</span>
+  </div>
+
+  <!-- ── Two-column layout: TOC sidebar + content ── -->
+  <div class="manual-layout">
+
+    <!-- Sticky TOC -->
+    <div class="manual-toc-sticky">
+      <div class="manual-toc-card">
+        <h4><i class="fas fa-list"></i> Contents</h4>
+        <ol>
+          {% for sec in toc_sections %}
+          <li><a href="#{{ sec.anchor }}">{{ sec.title }}</a></li>
+          {% endfor %}
+        </ol>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="card">
+      <div class="card-body manual-body">
+        {% autoescape off %}{{ content_html }}{% endautoescape %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* Highlight the active TOC item as user scrolls */
+document.addEventListener('DOMContentLoaded', function () {
+  var tocLinks = document.querySelectorAll('.manual-toc-card a');
+  var headings = document.querySelectorAll('.manual-body h2');
+  if (!headings.length) return;
+  function onScroll() {
+    var scrollY = window.scrollY + 100;
+    var active = headings[0];
+    headings.forEach(function (h) {
+      if (h.offsetTop <= scrollY) active = h;
+    });
+    tocLinks.forEach(function (a) {
+      a.classList.remove('toc-active');
+      if (a.getAttribute('href') === '#' + active.id) a.classList.add('toc-active');
+    });
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+});
+</script>
+{% endblock %}

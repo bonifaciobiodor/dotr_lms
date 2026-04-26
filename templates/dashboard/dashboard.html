@@ -1,0 +1,239 @@
+{% extends 'base/base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}
+  {% if is_admin_view %}Executive Dashboard
+  {% elif is_supervisor_view %}Supervisor Dashboard
+  {% else %}My Learning Dashboard{% endif %}
+{% endblock %}
+
+{% block content %}
+{% if is_admin_view %}
+<!-- ─── ADMIN/HR DASHBOARD ─── -->
+<div class="stat-grid">
+  <div class="stat-card blue">
+    <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+    <div><div class="stat-value">{{ total_employees }}</div><div class="stat-label">Total Employees</div></div>
+  </div>
+  <div class="stat-card gold">
+    <div class="stat-icon gold"><i class="fas fa-graduation-cap"></i></div>
+    <div><div class="stat-value">{{ total_trainings }}</div><div class="stat-label">Training Programs</div></div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+    <div><div class="stat-value">{{ completion_rate }}%</div><div class="stat-label">Completion Rate</div></div>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-icon red"><i class="fas fa-clock"></i></div>
+    <div><div class="stat-value">{{ pending_requests }}</div><div class="stat-label">Pending Approvals</div></div>
+  </div>
+  <div class="stat-card purple">
+    <div class="stat-icon purple"><i class="fas fa-certificate"></i></div>
+    <div><div class="stat-value">{{ certs_issued }}</div><div class="stat-label">Certificates Issued</div></div>
+  </div>
+</div>
+
+<div class="grid-2" style="margin-bottom:24px;">
+  <!-- Recent Enrollments -->
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-list" style="color:var(--dotr-blue-light);margin-right:8px;"></i>Recent Enrollments</h3>
+      <a href="{% url 'training_manage' %}" class="btn btn-outline btn-sm">View All</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Employee</th><th>Training</th><th>Status</th><th>Progress</th></tr></thead>
+        <tbody>
+          {% for enr in recent_enrollments %}
+          <tr>
+            <td><div style="font-weight:600;font-size:13px;">{{ enr.user.get_full_name }}</div><div class="text-sm text-muted">{{ enr.user.division }}</div></td>
+            <td style="max-width:180px;"><div style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ enr.training.title }}</div></td>
+            <td>
+              {% if enr.status == 'completed' %}<span class="badge badge-green">Completed</span>
+              {% elif enr.status == 'in_progress' %}<span class="badge badge-blue">In Progress</span>
+              {% else %}<span class="badge badge-gray">Enrolled</span>{% endif %}
+            </td>
+            <td style="min-width:80px;">
+              <div class="progress-bar"><div class="progress-fill {% if enr.status == 'completed' %}green{% endif %}" style="width:{{ enr.progress_percent }}%"></div></div>
+              <div class="text-sm text-muted" style="margin-top:3px;">{{ enr.progress_percent }}%</div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:24px;">No enrollments yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Upcoming Trainings -->
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-calendar" style="color:var(--dotr-gold-dark);margin-right:8px;"></i>Upcoming Trainings</h3>
+      <a href="{% url 'training_catalog' %}" class="btn btn-outline btn-sm">Catalog</a>
+    </div>
+    <div class="card-body" style="padding:0;">
+      {% for training in upcoming_trainings %}
+      <a href="{% url 'training_detail' pk=training.pk %}" style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--border);text-decoration:none;transition:background .15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+        <div style="width:44px;height:44px;border-radius:10px;background:{% if training.training_type == 'mandatory' %}rgba(239,68,68,.1){% elif training.training_type == 'specialized' %}rgba(139,92,246,.1){% else %}rgba(37,99,235,.1){% endif %};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <i class="fas fa-{% if training.delivery_mode == 'online' %}laptop{% elif training.delivery_mode == 'f2f' %}chalkboard-teacher{% else %}layer-group{% endif %}" style="color:{% if training.training_type == 'mandatory' %}var(--danger){% elif training.training_type == 'specialized' %}#7c3aed{% else %}var(--dotr-blue-light){% endif %};font-size:17px;"></i>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13.5px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ training.title }}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">{{ training.start_date|date:"M d, Y" }} &bull; {{ training.get_delivery_mode_display }}</div>
+        </div>
+        <span class="badge {% if training.training_type == 'mandatory' %}badge-red{% elif training.training_type == 'specialized' %}badge-purple{% else %}badge-blue{% endif %}">{{ training.get_training_type_display }}</span>
+      </a>
+      {% empty %}
+      <div class="empty-state"><i class="fas fa-calendar-times"></i><p>No upcoming trainings scheduled.</p></div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Monthly Chart + Quick Actions -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-chart-bar" style="color:var(--success);margin-right:8px;"></i>Monthly Completions</h3>
+    </div>
+    <div class="card-body">
+      <div style="display:flex;align-items:flex-end;gap:8px;height:140px;">
+        {% for m in monthly_completions %}
+        {% with max_count=10 %}
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <div style="font-size:11px;font-weight:700;color:var(--text-secondary);">{{ m.count }}</div>
+          <div style="width:100%;background:rgba(37,99,235,.12);border-radius:6px 6px 0 0;min-height:6px;height:{% widthratio m.count 10 100 %}px;max-height:110px;background:linear-gradient(180deg,var(--dotr-blue-light),#93c5fd);"></div>
+          <div style="font-size:10px;color:var(--text-muted);white-space:nowrap;">{{ m.month }}</div>
+        </div>
+        {% endwith %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3><i class="fas fa-bolt" style="color:var(--dotr-gold-dark);margin-right:8px;"></i>Quick Actions</h3></div>
+    <div class="card-body" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <a href="{% url 'training_create' %}" class="btn btn-primary" style="justify-content:center;"><i class="fas fa-plus"></i> New Training</a>
+      <a href="{% url 'user_create' %}" class="btn btn-gold" style="justify-content:center;"><i class="fas fa-user-plus"></i> Add Employee</a>
+      <a href="{% url 'training_request_list' %}" class="btn btn-outline" style="justify-content:center;"><i class="fas fa-paper-plane"></i> View Requests</a>
+      <a href="{% url 'compliance_report' %}" class="btn btn-outline" style="justify-content:center;"><i class="fas fa-clipboard-check"></i> Compliance</a>
+      <a href="{% url 'gap_analysis' %}" class="btn btn-outline" style="justify-content:center;"><i class="fas fa-chart-bar"></i> Gap Analysis</a>
+      <a href="{% url 'reports' %}" class="btn btn-outline" style="justify-content:center;"><i class="fas fa-file-alt"></i> Reports</a>
+    </div>
+  </div>
+</div>
+
+{% elif is_supervisor_view %}
+<!-- ─── SUPERVISOR DASHBOARD ─── -->
+<div class="stat-grid">
+  <div class="stat-card blue"><div class="stat-icon blue"><i class="fas fa-users"></i></div><div><div class="stat-value">{{ subordinates.count }}</div><div class="stat-label">My Team</div></div></div>
+  <div class="stat-card green"><div class="stat-icon green"><i class="fas fa-check"></i></div><div><div class="stat-value">{{ completion_rate }}%</div><div class="stat-label">Team Completion</div></div></div>
+  <div class="stat-card red"><div class="stat-icon red"><i class="fas fa-clock"></i></div><div><div class="stat-value">{{ pending_requests }}</div><div class="stat-label">Pending Approvals</div></div></div>
+</div>
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><h3>Team Members</h3></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Employee</th><th>Position</th><th>Action</th></tr></thead>
+        <tbody>
+          {% for sub in subordinates %}
+          <tr>
+            <td><div style="font-weight:600;">{{ sub.get_full_name }}</div><div class="text-sm text-muted">{{ sub.employee_id }}</div></td>
+            <td>{{ sub.position }}</td>
+            <td><a href="{% url 'employee_competency_view' user_pk=sub.pk %}" class="btn btn-outline btn-sm"><i class="fas fa-eye"></i> View</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><h3>Team Enrollments</h3><a href="{% url 'training_request_list' %}" class="btn btn-primary btn-sm">Approvals</a></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Employee</th><th>Training</th><th>Progress</th></tr></thead>
+        <tbody>
+          {% for enr in sub_enrollments %}
+          <tr>
+            <td style="font-weight:600;font-size:13px;">{{ enr.user.get_full_name }}</td>
+            <td style="font-size:13px;">{{ enr.training.title|truncatechars:40 }}</td>
+            <td>
+              <div class="progress-bar"><div class="progress-fill" style="width:{{ enr.progress_percent }}%"></div></div>
+              <div class="text-sm text-muted">{{ enr.progress_percent }}%</div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" style="text-align:center;color:var(--text-muted);">No active enrollments.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% else %}
+<!-- ─── EMPLOYEE DASHBOARD ─── -->
+<div class="stat-grid">
+  <div class="stat-card blue"><div class="stat-icon blue"><i class="fas fa-book-open"></i></div><div><div class="stat-value">{{ in_progress.count }}</div><div class="stat-label">In Progress</div></div></div>
+  <div class="stat-card green"><div class="stat-icon green"><i class="fas fa-check-circle"></i></div><div><div class="stat-value">{{ completed.count }}</div><div class="stat-label">Completed</div></div></div>
+  <div class="stat-card gold"><div class="stat-icon gold"><i class="fas fa-exclamation-triangle"></i></div><div><div class="stat-value">{{ competency_gaps|length }}</div><div class="stat-label">Competency Gaps</div></div></div>
+</div>
+
+<div class="grid-2" style="margin-bottom:24px;">
+  <div class="card">
+    <div class="card-header"><h3><i class="fas fa-play-circle" style="color:var(--dotr-blue-light);margin-right:8px;"></i>Continue Learning</h3><a href="{% url 'my_learnings' %}" class="btn btn-outline btn-sm">All</a></div>
+    <div class="card-body" style="padding:0;">
+      {% for enr in in_progress %}
+      <a href="{% url 'learning_view' pk=enr.training.pk %}" style="display:block;padding:14px 18px;border-bottom:1px solid var(--border);text-decoration:none;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:13.5px;font-weight:600;color:var(--text-primary);">{{ enr.training.title|truncatechars:50 }}</span>
+          <span class="badge badge-blue">{{ enr.progress_percent }}%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:{{ enr.progress_percent }}%"></div></div>
+        <div class="text-sm text-muted" style="margin-top:5px;">{{ enr.training.get_delivery_mode_display }}</div>
+      </a>
+      {% empty %}
+      <div class="empty-state"><i class="fas fa-book-open"></i><p>No active learnings. <a href="{% url 'training_catalog' %}">Browse catalog →</a></p></div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3><i class="fas fa-exclamation-triangle" style="color:var(--warning);margin-right:8px;"></i>Competency Gaps</h3><a href="{% url 'gap_analysis' %}" class="btn btn-outline btn-sm">Full Report</a></div>
+    <div class="card-body" style="padding:0;">
+      {% for gap in competency_gaps %}
+      <div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:13.5px;font-weight:600;">{{ gap.competency.name }}</div>
+          <div class="text-sm text-muted">Current: Level {{ gap.current_level }} → Target: Level {{ gap.target_level }}</div>
+        </div>
+        <span class="badge badge-gold">Gap: {{ gap.get_gap }}</span>
+      </div>
+      {% empty %}
+      <div class="empty-state"><i class="fas fa-star"></i><p>No competency gaps identified!</p></div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3><i class="fas fa-calendar" style="color:var(--dotr-gold-dark);margin-right:8px;"></i>Upcoming Trainings</h3><a href="{% url 'training_catalog' %}" class="btn btn-primary btn-sm">Browse All</a></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:0;">
+    {% for t in upcoming %}
+    <a href="{% url 'training_detail' pk=t.pk %}" style="display:block;padding:16px 18px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);text-decoration:none;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+      <div style="font-size:13.5px;font-weight:700;color:var(--text-primary);margin-bottom:6px;">{{ t.title|truncatechars:55 }}</div>
+      <div class="text-sm text-muted">{{ t.start_date|date:"M d, Y" }}</div>
+      <div style="margin-top:8px;display:flex;gap:6px;">
+        <span class="badge {% if t.training_type == 'mandatory' %}badge-red{% elif t.training_type == 'specialized' %}badge-purple{% else %}badge-blue{% endif %}">{{ t.get_training_type_display }}</span>
+        <span class="badge badge-gray">{{ t.get_delivery_mode_display }}</span>
+      </div>
+    </a>
+    {% empty %}
+    <div style="padding:24px 18px;color:var(--text-muted);font-size:13.5px;">No upcoming trainings scheduled.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

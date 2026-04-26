@@ -1,0 +1,53 @@
+{% extends 'base/base.html' %}
+{% block title %}Manage Enrollments{% endblock %}
+{% block page_title %}Enrollments — {{ training.title|truncatechars:50 }}{% endblock %}
+{% block content %}
+<div class="grid-2" style="align-items:start;">
+  <div class="card">
+    <div class="card-header"><h3>Enrolled Learners <span class="badge badge-blue">{{ enrollments.count }}</span></h3><a href="{% url 'attendance_manage' training_pk=training.pk %}" class="btn btn-outline btn-sm"><i class="fas fa-calendar-check"></i> Attendance</a></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Employee</th><th>Status</th><th>Progress</th><th>Score</th></tr></thead>
+        <tbody>
+          {% for enr in enrollments %}
+          <tr>
+            <td>
+              <div style="font-weight:600;font-size:13px;">{{ enr.user.get_full_name }}</div>
+              <div style="font-size:12px;color:var(--text-muted);">{{ enr.user.division }}</div>
+            </td>
+            <td><span class="badge {% if enr.status == 'completed' %}badge-green{% elif enr.status == 'in_progress' %}badge-blue{% elif enr.status == 'failed' %}badge-red{% else %}badge-gray{% endif %}">{{ enr.get_status_display }}</span></td>
+            <td>
+              <div class="progress-bar" style="width:70px;"><div class="progress-fill" style="width:{{ enr.progress_percent }}%"></div></div>
+              <div class="text-sm text-muted">{{ enr.progress_percent }}%</div>
+            </td>
+            <td style="font-weight:{% if enr.final_score %}700{% else %}400{% endif %};color:{% if enr.final_score and enr.final_score >= training.passing_score %}var(--success){% elif enr.final_score %}var(--danger){% else %}var(--text-muted){% endif %};">
+              {% if enr.final_score %}{{ enr.final_score }}%{% else %}—{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4"><div class="empty-state"><i class="fas fa-users"></i><p>No enrollments yet.</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="position:sticky;top:80px;">
+    <div class="card-header"><h3><i class="fas fa-user-plus" style="color:var(--success);margin-right:6px;"></i>Enroll Employee</h3></div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Select Employee</label>
+          <select name="user_id" class="form-control" required>
+            <option value="">— Choose Employee —</option>
+            {% for u in available_users %}<option value="{{ u.pk }}">{{ u.get_full_name }} ({{ u.division }})</option>{% endfor %}
+          </select>
+        </div>
+        {% if not available_users %}<div class="alert alert-info"><i class="fas fa-info-circle"></i> All active employees are already enrolled.</div>{% endif %}
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;" {% if not available_users %}disabled{% endif %}><i class="fas fa-user-plus"></i> Enroll</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

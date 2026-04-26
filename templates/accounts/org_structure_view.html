@@ -1,0 +1,358 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% block title %}Organizational Structure{% endblock %}
+{% block page_title %}Organizational Structure{% endblock %}
+
+{% block extra_css %}
+<style>
+  .os-page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+  .os-meta { font-size: 12px; color: var(--text-muted); }
+  .os-meta strong { color: var(--text-secondary); }
+
+  /* ── Chart card ── */
+  .org-card {
+    background: white; border-radius: var(--radius); box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  /* ── Zoom toolbar ── */
+  .zoom-bar {
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    background: #f8fafc;
+  }
+  .zoom-bar-label { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-right: 4px; }
+  .zoom-btn {
+    width: 30px; height: 30px; border-radius: 7px;
+    border: 1.5px solid var(--border); background: white;
+    cursor: pointer; font-size: 14px; font-weight: 700;
+    color: var(--text-secondary); display: flex; align-items: center; justify-content: center;
+    transition: all .12s; font-family: inherit;
+  }
+  .zoom-btn:hover { background: var(--dotr-blue-light); border-color: var(--dotr-blue-light); color: white; }
+  .zoom-level {
+    min-width: 52px; text-align: center;
+    font-size: 12.5px; font-weight: 700; color: var(--text-primary);
+    font-family: 'DM Mono', monospace;
+  }
+  .zoom-sep { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+  .zoom-fit-btn {
+    padding: 4px 10px; border-radius: 7px;
+    border: 1.5px solid var(--border); background: white;
+    cursor: pointer; font-size: 12px; font-weight: 600;
+    color: var(--text-secondary); transition: all .12s; font-family: inherit;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .zoom-fit-btn:hover { background: var(--dotr-blue-light); border-color: var(--dotr-blue-light); color: white; }
+  .zoom-hint { font-size: 11px; color: var(--text-muted); margin-left: auto; }
+
+  /* ── Viewport (scrollable area that clips the zoomed tree) ── */
+  .org-viewport {
+    position: relative; overflow: hidden;
+    height: 620px; cursor: grab;
+    background: #f8fafc;
+  }
+  .org-viewport:active { cursor: grabbing; }
+  .org-viewport.is-dragging { cursor: grabbing; user-select: none; }
+
+  /* ── Tree (scaled & translated) ── */
+  .org-tree {
+    display: inline-flex; flex-direction: column; align-items: center;
+    transform-origin: 0 0;
+    will-change: transform;
+    padding: 28px;
+  }
+
+  /* ── Nodes ── */
+  .org-node-wrap { display: inline-flex; flex-direction: column; align-items: center; }
+  .connector-v { width: 2px; height: 20px; background: #cbd5e1; flex-shrink: 0; }
+  .org-children-row { display: flex; justify-content: center; align-items: flex-start; }
+  .child-branch {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 0 14px; position: relative;
+  }
+  .child-top-line { width: 2px; height: 20px; background: #cbd5e1; flex-shrink: 0; }
+  .org-children-row.multi .child-branch::before {
+    content: ''; position: absolute; top: 0;
+    height: 2px; background: #cbd5e1; left: 0; right: 0;
+  }
+  .org-children-row.multi .child-branch:first-child::before { left: 50%; }
+  .org-children-row.multi .child-branch:last-child::before  { right: 50%; }
+  .org-children-row.multi .child-branch:only-child::before  { display: none; }
+
+  .org-node {
+    background: white; border-radius: 10px; padding: 10px 14px;
+    min-width: 120px; max-width: 190px; text-align: center;
+    border: 2px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,.07);
+    transition: box-shadow .15s, transform .15s; cursor: default; margin: 0 4px;
+  }
+  .org-node:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.12); }
+  .org-node.lvl-0 { background: var(--dotr-blue); border-color: var(--dotr-blue); min-width: 180px; }
+  .org-node.lvl-0 .on-abbr  { color: var(--dotr-gold); }
+  .org-node.lvl-0 .on-name  { color: white; font-size: 13px; }
+  .org-node.lvl-0 .on-type  { color: rgba(255,255,255,.55); }
+  .org-node.lvl-0 .on-head  { color: rgba(255,255,255,.7); }
+  .org-node.lvl-1 { border-color: #0047BD; }
+  .org-node.lvl-2 { border-color: #2563eb; }
+  .org-node.lvl-3 { border-color: #64748b; }
+
+  .on-abbr { font-size: 10px; font-weight: 800; color: var(--dotr-gold-dark); letter-spacing: .5px; }
+  .on-name { font-size: 12px; font-weight: 700; color: var(--text-primary); line-height: 1.3; margin-top: 2px; }
+  .on-type { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .4px; margin-top: 3px; }
+  .on-person {
+    font-size: 11px; font-weight: 600; color: #1e3a6e;
+    border-top: 1px dashed rgba(0,0,0,.1); margin-top: 6px; padding-top: 5px; line-height: 1.35;
+  }
+  .org-node.lvl-0 .on-person { color: var(--dotr-gold); border-top-color: rgba(255,255,255,.2); }
+  .on-head { font-size: 10px; color: var(--text-muted); margin-top: 2px; font-style: italic; }
+  .org-node.lvl-0 .on-head { color: rgba(255,255,255,.65); }
+
+  .no-active { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+  .no-active i { font-size: 48px; opacity: .2; display: block; margin-bottom: 12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="os-page-header">
+  <div>
+    <h2 style="font-size:18px;font-weight:800;color:var(--text-primary);margin-bottom:4px;">
+      <i class="fas fa-sitemap" style="color:var(--dotr-blue-light);margin-right:8px;"></i>
+      DOTr Organizational Structure
+    </h2>
+    {% if active %}
+    <div class="os-meta">
+      Active version: <strong>{{ active.filename }}</strong> &nbsp;&middot;&nbsp;
+      Saved by <strong>{{ active.created_by.get_full_name|default:active.created_by.username }}</strong>
+      on <strong>{{ active.created_at|date:"N j, Y g:i A" }}</strong>
+    </div>
+    {% endif %}
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    {% if user.role in 'admin,hr' %}
+    <a href="{% url 'org_structure_history' %}" class="btn btn-outline btn-sm">
+      <i class="fas fa-history"></i> Version History
+    </a>
+    <a href="{% url 'org_structure_design' %}" class="btn btn-primary btn-sm">
+      <i class="fas fa-drafting-compass"></i> Design / Redesign
+    </a>
+    {% endif %}
+    {% if active %}
+    <a href="{% url 'org_structure_download' pk=active.pk %}" class="btn btn-outline btn-sm">
+      <i class="fas fa-download"></i> Download HTML
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+{% if active %}
+<div class="org-card">
+
+  <!-- Zoom toolbar -->
+  <div class="zoom-bar">
+    <span class="zoom-bar-label"><i class="fas fa-search"></i> Zoom</span>
+    <button class="zoom-btn" id="btn-zoom-out" title="Zoom out (scroll down)">&#8722;</button>
+    <span class="zoom-level" id="zoom-level">100%</span>
+    <button class="zoom-btn" id="btn-zoom-in"  title="Zoom in (scroll up)">&#43;</button>
+    <div class="zoom-sep"></div>
+    <button class="zoom-fit-btn" id="btn-zoom-fit"><i class="fas fa-compress-arrows-alt"></i> Fit</button>
+    <button class="zoom-fit-btn" id="btn-zoom-reset"><i class="fas fa-redo-alt"></i> 100%</button>
+    <span class="zoom-hint"><i class="fas fa-mouse" style="margin-right:3px;"></i>Scroll to zoom &nbsp;&middot;&nbsp; Drag to pan</span>
+  </div>
+
+  <!-- Pannable / zoomable viewport -->
+  <div class="org-viewport" id="org-viewport">
+    <div class="org-tree" id="org-tree">
+      <div style="color:var(--text-muted);padding:40px;">
+        <i class="fas fa-spinner fa-spin"></i> Loading…
+      </div>
+    </div>
+  </div>
+
+</div>
+{% else %}
+<div class="card">
+  <div class="card-body">
+    <div class="no-active">
+      <i class="fas fa-sitemap"></i>
+      <p style="font-size:15px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">No Active Organizational Structure</p>
+      <p style="font-size:13px;">No organizational structure has been published yet.</p>
+      {% if user.role in 'admin,hr' %}
+      <a href="{% url 'org_structure_design' %}" class="btn btn-primary" style="margin-top:16px;">
+        <i class="fas fa-drafting-compass"></i> Create Organizational Structure
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if active %}
+<script>
+(function () {
+  'use strict';
+
+  const TREE = {{ tree_json|safe }};
+
+  /* ── Build org chart DOM ── */
+  function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+  function buildNode(node, level) {
+    const wrap = document.createElement('div');
+    wrap.className = 'org-node-wrap';
+
+    const box = document.createElement('div');
+    box.className = 'org-node lvl-' + Math.min(level, 3);
+
+    let inner = '';
+    if (node.abbreviation) inner += `<div class="on-abbr">${esc(node.abbreviation)}</div>`;
+    inner += `<div class="on-name">${esc(node.name)}</div>`;
+    inner += `<div class="on-type">${esc(node.unit_type || '')}</div>`;
+    const hu = node.head_user;
+    if (hu && hu.full_name) {
+      inner += `<div class="on-person"><i class="fas fa-user" style="font-size:9px;margin-right:3px;opacity:.7;"></i>${esc(hu.full_name)}</div>`;
+      const pos = hu.position || node.head_position || '';
+      if (pos) inner += `<div class="on-head">${esc(pos)}</div>`;
+    } else if (node.head_position) {
+      inner += `<div class="on-head">${esc(node.head_position)}</div>`;
+    }
+    box.innerHTML = inner;
+    wrap.appendChild(box);
+
+    if (node.children && node.children.length) {
+      const vLine = document.createElement('div');
+      vLine.className = 'connector-v';
+      wrap.appendChild(vLine);
+
+      const isMulti = node.children.length >= 2;
+      const row = document.createElement('div');
+      row.className = isMulti ? 'org-children-row multi' : 'org-children-row';
+
+      node.children.forEach(function (child) {
+        const branch = document.createElement('div');
+        branch.className = 'child-branch';
+        const topLine = document.createElement('div');
+        topLine.className = 'child-top-line';
+        branch.appendChild(topLine);
+        branch.appendChild(buildNode(child, level + 1));
+        row.appendChild(branch);
+      });
+      wrap.appendChild(row);
+    }
+    return wrap;
+  }
+
+  const tree     = document.getElementById('org-tree');
+  const viewport = document.getElementById('org-viewport');
+
+  tree.innerHTML = '';
+  if (!TREE || !TREE.length) {
+    tree.innerHTML = '<div style="padding:40px;color:#94a3b8;">No nodes in this structure.</div>';
+  } else {
+    TREE.forEach(function (root) { tree.appendChild(buildNode(root, 0)); });
+  }
+
+  /* ── Zoom & Pan ── */
+  const MIN_SCALE = 0.15, MAX_SCALE = 3, STEP = 0.15;
+  let scale = 1, panX = 0, panY = 0;
+
+  const levelEl = document.getElementById('zoom-level');
+
+  function applyTransform(animated) {
+    tree.style.transition = animated ? 'transform .2s ease' : 'none';
+    tree.style.transform  = `translate(${panX}px,${panY}px) scale(${scale})`;
+    levelEl.textContent   = Math.round(scale * 100) + '%';
+  }
+
+  /* Zoom toward a specific viewport point */
+  function zoomToward(newScale, vpX, vpY) {
+    newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+    const ratio = newScale / scale;
+    panX  = vpX - ratio * (vpX - panX);
+    panY  = vpY - ratio * (vpY - panY);
+    scale = newScale;
+    applyTransform(false);
+  }
+
+  /* Fit-to-viewport: scale so tree fills 90% of the viewport */
+  function fitToView(animated) {
+    const vw = viewport.clientWidth, vh = viewport.clientHeight;
+    const tw = tree.scrollWidth,    th = tree.scrollHeight;
+    const newScale = Math.min(vw / tw, vh / th) * 0.90;
+    scale = Math.max(MIN_SCALE, Math.min(1, newScale));
+    panX  = (vw - tw * scale) / 2;
+    panY  = (vh - th * scale) / 2;
+    applyTransform(animated !== false);
+  }
+
+  /* Button controls */
+  document.getElementById('btn-zoom-in').addEventListener('click', function () {
+    const vw = viewport.clientWidth / 2, vh = viewport.clientHeight / 2;
+    zoomToward(scale + STEP, vw, vh);
+    applyTransform(true);
+  });
+  document.getElementById('btn-zoom-out').addEventListener('click', function () {
+    const vw = viewport.clientWidth / 2, vh = viewport.clientHeight / 2;
+    zoomToward(scale - STEP, vw, vh);
+    applyTransform(true);
+  });
+  document.getElementById('btn-zoom-reset').addEventListener('click', function () {
+    scale = 1; panX = 0; panY = 0; applyTransform(true);
+  });
+  document.getElementById('btn-zoom-fit').addEventListener('click', function () {
+    fitToView(true);
+  });
+
+  /* Mouse-wheel zoom (toward cursor) */
+  viewport.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    const rect  = viewport.getBoundingClientRect();
+    const vpX   = e.clientX - rect.left;
+    const vpY   = e.clientY - rect.top;
+    const delta = e.deltaY < 0 ? STEP : -STEP;
+    zoomToward(scale + delta, vpX, vpY);
+  }, { passive: false });
+
+  /* Mouse drag to pan */
+  let dragging = false, dragStartX, dragStartY, panStartX, panStartY;
+
+  viewport.addEventListener('mousedown', function (e) {
+    if (e.button !== 0) return;
+    dragging   = true;
+    dragStartX = e.clientX; dragStartY = e.clientY;
+    panStartX  = panX;      panStartY  = panY;
+    viewport.classList.add('is-dragging');
+  });
+  window.addEventListener('mousemove', function (e) {
+    if (!dragging) return;
+    panX = panStartX + (e.clientX - dragStartX);
+    panY = panStartY + (e.clientY - dragStartY);
+    applyTransform(false);
+  });
+  window.addEventListener('mouseup', function () {
+    dragging = false;
+    viewport.classList.remove('is-dragging');
+  });
+
+  /* Touch pan */
+  let touchStartX, touchStartY, tPanStartX, tPanStartY;
+  viewport.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1) return;
+    touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+    tPanStartX  = panX;                  tPanStartY  = panY;
+  }, { passive: true });
+  viewport.addEventListener('touchmove', function (e) {
+    if (e.touches.length !== 1) return;
+    e.preventDefault();
+    panX = tPanStartX + (e.touches[0].clientX - touchStartX);
+    panY = tPanStartY + (e.touches[0].clientY - touchStartY);
+    applyTransform(false);
+  }, { passive: false });
+
+  /* Init: fit on first render */
+  requestAnimationFrame(function () { fitToView(false); });
+})();
+</script>
+{% endif %}
+{% endblock %}

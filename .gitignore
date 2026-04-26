@@ -1,0 +1,52 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Virtual environment ───────────────────────────────────────────────────────
+env/
+venv/
+.venv/
+
+# ── Django ────────────────────────────────────────────────────────────────────
+*.sqlite3
+db.sqlite3
+db1.sqlite3
+staticfiles/
+local_settings.py
+
+# ── Environment / secrets ─────────────────────────────────────────────────────
+.env
+*.env
+!.env.example
+
+# ── SSL certificates ──────────────────────────────────────────────────────────
+*.crt
+*.key
+*.pem
+
+# ── Media uploads (user content) ─────────────────────────────────────────────
+media/
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+logs/*.log
+logs/security.log
+
+# ── OS / editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+requiredm.txt

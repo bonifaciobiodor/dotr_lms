@@ -1,0 +1,25 @@
+{% extends 'base/base.html' %}
+{% block title %}Delete Competency{% endblock %}
+{% block page_title %}Delete Competency{% endblock %}
+{% block content %}
+<div class="card" style="max-width:520px;margin:0 auto;">
+  <div class="card-header" style="background:#fff5f5;">
+    <h3 style="color:var(--danger);"><i class="fas fa-exclamation-triangle" style="margin-right:8px;"></i>Confirm Delete</h3>
+  </div>
+  <div style="padding:28px 32px;">
+    <p style="color:var(--text-secondary);margin-bottom:20px;">
+      Are you sure you want to delete the competency
+      <strong style="color:var(--text-primary);">{{ competency.name }}</strong>?
+      This will also delete all {{ competency.indicators.count }} associated indicator(s).
+      This action cannot be undone.
+    </p>
+    <form method="post" style="display:flex;gap:12px;justify-content:flex-end;">
+      {% csrf_token %}
+      <a href="{% url 'dotr_cf_detail' pk=competency.pk %}" class="btn btn-outline">Cancel</a>
+      <button type="submit" class="btn btn-sm" style="background:var(--danger);color:white;padding:9px 20px;border-radius:8px;border:none;cursor:pointer;font-size:13.5px;">
+        <i class="fas fa-trash"></i> Yes, Delete
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

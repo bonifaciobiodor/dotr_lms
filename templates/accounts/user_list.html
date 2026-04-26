@@ -1,0 +1,66 @@
+{% extends 'base/base.html' %}
+{% block title %}Employees{% endblock %}
+{% block page_title %}Employee Management{% endblock %}
+{% block content %}
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-body" style="padding:14px 20px;">
+    <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <div style="flex:2;min-width:180px;position:relative;">
+        <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;"></i>
+        <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search name, ID, email..." style="padding-left:36px;">
+      </div>
+      <select name="division" class="form-control" style="flex:1;min-width:140px;">
+        <option value="">All Divisions</option>
+        {% for d in divisions %}<option value="{{ d.id }}" {% if request.GET.division == d.id|stringformat:'s' %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
+      </select>
+      <select name="role" class="form-control" style="flex:1;min-width:120px;">
+        <option value="">All Roles</option>
+        {% for val,label in roles %}<option value="{{ val }}" {% if request.GET.role == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
+      <a href="{% url 'user_create' %}" class="btn btn-gold"><i class="fas fa-user-plus"></i> Add Employee</a>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Employee</th><th>ID</th><th>Division</th><th>Position</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for u in page_obj %}
+        <tr>
+          <td>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:34px;height:34px;border-radius:50%;background:var(--dotr-blue-light);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">{{ u.first_name|first }}{{ u.last_name|first }}</div>
+              <div><div style="font-weight:600;font-size:13.5px;">{{ u.get_full_name }}</div><div style="font-size:12px;color:var(--text-muted);">{{ u.email }}</div></div>
+            </div>
+          </td>
+          <td><code style="font-family:'DM Mono',monospace;font-size:12px;">{{ u.employee_id|default:"—" }}</code></td>
+          <td style="font-size:13px;">{{ u.division|default:"—" }}</td>
+          <td style="font-size:13px;">{{ u.position|default:"—"|truncatechars:35 }}</td>
+          <td><span class="badge {% if u.role == 'admin' %}badge-red{% elif u.role == 'hr' %}badge-blue{% elif u.role == 'supervisor' %}badge-purple{% elif u.role == 'trainer' %}badge-gold{% else %}badge-gray{% endif %}">{{ u.get_role_display }}</span></td>
+          <td>{% if u.is_active %}<span class="badge badge-green">Active</span>{% else %}<span class="badge badge-red">Inactive</span>{% endif %}</td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'user_edit' pk=u.pk %}" class="btn btn-outline btn-sm" title="Edit"><i class="fas fa-edit"></i></a>
+              <a href="{% url 'employee_competency_view' user_pk=u.pk %}" class="btn btn-outline btn-sm" title="Competencies"><i class="fas fa-brain"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7"><div class="empty-state"><i class="fas fa-users"></i><p>No employees found.</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}
+  <div style="padding:16px 20px;border-top:1px solid var(--border);">
+    <div class="pagination">
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="page-btn"><i class="fas fa-chevron-left"></i></a>{% endif %}
+      {% for num in page_obj.paginator.page_range %}{% if page_obj.number == num %}<span class="page-btn active">{{ num }}</span>{% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}<a href="?page={{ num }}" class="page-btn">{{ num }}</a>{% endif %}{% endfor %}
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="page-btn"><i class="fas fa-chevron-right"></i></a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

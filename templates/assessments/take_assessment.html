@@ -1,0 +1,102 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ assessment.title }}{% endblock %}
+{% block page_title %}Assessment: {{ assessment.title }}{% endblock %}
+{% block content %}
+<div style="max-width:760px;margin:0 auto;">
+  <div class="card" style="margin-bottom:16px;">
+    <div style="height:6px;background:linear-gradient(90deg,var(--dotr-gold),#f59e0b);"></div>
+    <div class="card-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h2 style="font-size:20px;font-weight:800;">{{ assessment.title }}</h2>
+          <div style="color:var(--text-muted);font-size:13px;margin-top:4px;">{{ assessment.training.title }}</div>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <div style="text-align:center;background:#f8fafc;border-radius:8px;padding:10px 16px;">
+            <div style="font-size:20px;font-weight:800;color:var(--dotr-blue-light);">{{ questions.count }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Questions</div>
+          </div>
+          <div style="text-align:center;background:#f8fafc;border-radius:8px;padding:10px 16px;">
+            <div style="font-size:20px;font-weight:800;color:var(--warning);">{{ assessment.time_limit_minutes }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Minutes</div>
+          </div>
+          <div style="text-align:center;background:#f8fafc;border-radius:8px;padding:10px 16px;">
+            <div style="font-size:20px;font-weight:800;color:var(--success);">{{ assessment.passing_score }}%</div>
+            <div style="font-size:11px;color:var(--text-muted);">Passing</div>
+          </div>
+          <div id="timer" style="text-align:center;background:rgba(239,68,68,.08);border-radius:8px;padding:10px 16px;min-width:80px;">
+            <div style="font-size:20px;font-weight:800;color:var(--danger);font-family:'DM Mono',monospace;" id="time-display">--:--</div>
+            <div style="font-size:11px;color:var(--danger);">Time Left</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form method="post" id="assessment-form">
+    {% csrf_token %}
+    {% for question in questions %}
+    <div class="card" style="margin-bottom:14px;">
+      <div class="card-body">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--dotr-blue-light);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">{{ forloop.counter }}</div>
+          <div style="flex:1;">
+            <p style="font-size:15px;font-weight:600;margin-bottom:16px;line-height:1.5;">{{ question.question_text }}</p>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              {% if question.question_type == 'tf' %}
+              {% for choice in question.choices.all %}
+              <label style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor='var(--dotr-blue-light)'" onmouseout="this.style.borderColor=this.querySelector('input').checked?'var(--dotr-blue-light)':'var(--border)'">
+                <input type="radio" name="q_{{ question.id }}" value="{{ choice.id }}" style="accent-color:var(--dotr-blue-light);">
+                <span style="font-weight:500;">{{ choice.choice_text }}</span>
+              </label>
+              {% empty %}
+              <label style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;transition:all .15s;">
+                <input type="radio" name="q_{{ question.id }}" value="True"> <span style="font-weight:500;">True</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;transition:all .15s;">
+                <input type="radio" name="q_{{ question.id }}" value="False"> <span style="font-weight:500;">False</span>
+              </label>
+              {% endfor %}
+              {% elif question.question_type == 'id' %}
+              <input type="text" name="text_{{ question.id }}" class="form-control" placeholder="Type your answer here...">
+              {% else %}
+              {% for choice in question.choices.all %}
+              <label style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;transition:all .15s;" onmouseover="this.style.borderColor='var(--dotr-blue-light)'" onmouseout="this.style.borderColor=this.querySelector('input').checked?'var(--dotr-blue-light)':'var(--border)'">
+                <input type="radio" name="q_{{ question.id }}" value="{{ choice.id }}" style="accent-color:var(--dotr-blue-light);">
+                <span style="font-weight:500;">{{ choice.choice_text }}</span>
+              </label>
+              {% endfor %}
+              {% endif %}
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);white-space:nowrap;">{{ question.points }} pt{{ question.points|pluralize }}</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+
+    <div style="display:flex;justify-content:center;margin-top:24px;">
+      <button type="submit" class="btn btn-gold btn-lg" onclick="return confirm('Are you sure you want to submit? You cannot change your answers after submission.')">
+        <i class="fas fa-paper-plane"></i> Submit Assessment
+      </button>
+    </div>
+  </form>
+</div>
+<script>
+  // Countdown timer
+  const minutes = {{ assessment.time_limit_minutes }};
+  let seconds = minutes * 60;
+  const display = document.getElementById('time-display');
+  const timer = setInterval(() => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    display.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    if (seconds <= 300) display.style.color = 'var(--danger)';
+    if (seconds <= 0) {
+      clearInterval(timer);
+      document.getElementById('assessment-form').submit();
+    }
+    seconds--;
+  }, 1000);
+</script>
+{% endblock %}

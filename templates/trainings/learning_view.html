@@ -1,0 +1,330 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ training.title }}{% endblock %}
+{% block page_title %}Learning: {{ training.title|truncatechars:50 }}{% endblock %}
+{% block content %}
+<div style="display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start;">
+
+  <!-- ── Sidebar: Module List ── -->
+  <div class="card" style="position:sticky;top:80px;">
+    <div class="card-header" style="flex-direction:column;align-items:flex-start;">
+      <h3 style="margin-bottom:8px;">{{ training.title|truncatechars:40 }}</h3>
+      <div style="width:100%;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:5px;">
+          <span>Progress</span><span>{{ progress }}%</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill {% if progress == 100 %}green{% endif %}" style="width:{{ progress }}%;"></div>
+        </div>
+      </div>
+      {% if training.end_date and training.end_date >= today %}
+      {% if not training.start_date or training.start_date <= today %}
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);width:100%;">
+        <div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;"><i class="fas fa-hourglass-half" style="color:#f59e0b;"></i> Time Remaining</div>
+        <div id="sidebar-remaining" style="font-size:15px;font-weight:800;color:#d97706;font-variant-numeric:tabular-nums;">--d --h --m --s</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:3px;"><i class="fas fa-calendar-times"></i> Ends {{ training.end_date|date:"M d, Y" }}</div>
+      </div>
+      <script>
+      (function(){
+        var t=new Date("{{ training.end_date|date:'Y-m-d' }}T23:59:59"),el=document.getElementById('sidebar-remaining');
+        function tick(){
+          var diff=t-new Date();
+          if(diff<=0){el.textContent='Closed';el.style.color='#ef4444';return;}
+          var d=Math.floor(diff/86400000),h=Math.floor(diff%86400000/3600000),m=Math.floor(diff%3600000/60000),s=Math.floor(diff%60000/1000);
+          el.textContent=d+'d '+String(h).padStart(2,'0')+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s';
+        }
+        tick();setInterval(tick,1000);
+      })();
+      </script>
+      {% endif %}
+      {% endif %}
+    </div>
+
+    <div>
+      {% for module in modules %}
+      <a href="{% url 'learning_view' pk=training.pk %}?module={{ module.pk }}"
+         style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--border);text-decoration:none;
+                background:{% if current_module.pk == module.pk %}rgba(37,99,235,.06){% else %}transparent{% endif %};
+                border-left:3px solid {% if current_module.pk == module.pk %}var(--dotr-blue-light){% else %}transparent{% endif %};">
+
+        <!-- Module order / done circle -->
+        <div style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+          {% if module.is_done %}background:var(--success);color:white;
+          {% elif current_module.pk == module.pk %}background:var(--dotr-blue-light);color:white;
+          {% else %}background:var(--border);color:var(--text-muted);{% endif %}
+          font-size:11px;font-weight:700;">
+          {% if module.is_done %}<i class="fas fa-check"></i>{% else %}{{ module.order }}{% endif %}
+        </div>
+
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:{% if current_module.pk == module.pk %}700{% else %}500{% endif %};
+               color:{% if current_module.pk == module.pk %}var(--dotr-blue-light){% else %}var(--text-primary){% endif %};
+               white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ module.title }}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:6px;">
+            <span><i class="fas fa-clock"></i> {{ module.duration_minutes }}m</span>
+            {% if module.has_quiz %}
+              {% if module.quiz_taken %}
+                {% if module.quiz_passed %}
+                <span style="color:var(--success);font-weight:700;"><i class="fas fa-check-circle"></i> Quiz ✓</span>
+                {% else %}
+                <span style="color:var(--danger);"><i class="fas fa-times-circle"></i> Quiz ✗</span>
+                {% endif %}
+              {% else %}
+              <span style="color:#d97706;font-weight:700;"><i class="fas fa-question-circle"></i> Quiz</span>
+              {% endif %}
+            {% endif %}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+
+    <!-- Final Exam button (only when all modules done) -->
+    {% if progress == 100 and final_exam %}
+    <div style="padding:14px;">
+      <a href="{% url 'take_assessment' pk=final_exam.pk %}"
+         class="btn btn-primary" style="width:100%;justify-content:center;">
+        <i class="fas fa-graduation-cap"></i> Take Final Exam
+      </a>
+      <div style="font-size:11.5px;color:var(--text-muted);text-align:center;margin-top:6px;">
+        {{ final_exam.question_count }} question{{ final_exam.question_count|pluralize }} &middot;
+        {{ final_exam.time_limit_minutes }} min &middot; Pass at {{ final_exam.passing_score }}%
+      </div>
+    </div>
+    {% elif progress == 100 and not final_exam %}
+    <div style="padding:14px;">
+      <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px 14px;text-align:center;font-size:13px;color:#065f46;">
+        <i class="fas fa-check-double" style="margin-right:4px;"></i> Training Complete!
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- ── Main Content ── -->
+  <div>
+    {% if current_module %}
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header">
+        <div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">
+            Module {{ current_module.order }} of {{ modules|length }}
+          </div>
+          <h2 style="font-size:18px;font-weight:800;">{{ current_module.title }}</h2>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="badge {% if current_module.content_type == 'quiz' %}badge-gold{% elif current_module.content_type == 'video' %}badge-blue{% else %}badge-gray{% endif %}">
+            <i class="fas fa-{% if current_module.content_type == 'video' %}video{% elif current_module.content_type == 'pdf' %}file-pdf{% elif current_module.content_type == 'quiz' %}question-circle{% else %}file-alt{% endif %}"></i>
+            {{ current_module.get_content_type_display }}
+          </span>
+          {% if current_module.has_quiz %}
+          <span style="background:#fef3c7;color:#92400e;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;">
+            <i class="fas fa-question-circle"></i> Has Quiz
+          </span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card-body">
+        {% if current_module.description %}
+        <p style="color:var(--text-secondary);margin-bottom:20px;line-height:1.7;">{{ current_module.description }}</p>
+        {% endif %}
+
+        <div style="background:#f8fafc;border-radius:10px;padding:24px;min-height:200px;border:1px solid var(--border);line-height:1.8;font-size:14.5px;color:var(--text-primary);">
+          {% if current_module.content_type == 'video' %}
+            {% if video_embed_url %}
+            <iframe width="100%" height="400" src="{{ video_embed_url }}"
+              frameborder="0" allowfullscreen allow="autoplay; encrypted-media"
+              style="border-radius:8px;"></iframe>
+            {% elif current_module.file_attachment %}
+            <video width="100%" height="400" autoplay muted controls style="border-radius:8px;">
+              <source src="{{ current_module.file_attachment.url }}">
+            </video>
+            {% elif current_module.content %}
+            <video width="100%" height="400" autoplay muted controls style="border-radius:8px;">
+              <source src="{{ current_module.content }}">
+            </video>
+            {% endif %}
+          {% elif current_module.content_type == 'pdf' %}
+            {% if current_module.file_attachment %}
+              {% if '.pdf' in current_module.file_attachment.name %}
+              <iframe src="{{ current_module.file_attachment.url }}"
+                width="100%" height="600" style="border-radius:8px;border:1px solid var(--border);"></iframe>
+              {% else %}
+              <div style="text-align:center;padding:40px 20px;">
+                <i class="fas fa-file-word" style="font-size:52px;color:#2b579a;margin-bottom:16px;display:block;"></i>
+                <p style="color:var(--text-secondary);margin-bottom:20px;">This document cannot be previewed in the browser.</p>
+                <a href="{{ current_module.file_attachment.url }}" download class="btn btn-primary">
+                  <i class="fas fa-download"></i> Download Document
+                </a>
+              </div>
+              {% endif %}
+            {% elif current_module.content %}
+            <iframe src="{{ current_module.content }}"
+              width="100%" height="600" style="border-radius:8px;border:1px solid var(--border);"></iframe>
+            {% endif %}
+          {% else %}
+          {{ current_module.content|linebreaks }}
+          {% endif %}
+        </div>
+
+        <!-- Module Quiz status (if already taken) -->
+        {% if current_module.has_quiz and current_module.quiz_taken %}
+        <div style="margin-top:16px;background:{% if current_module.quiz_passed %}rgba(16,185,129,.07){% else %}rgba(239,68,68,.07){% endif %};border:1px solid {% if current_module.quiz_passed %}rgba(16,185,129,.25){% else %}rgba(239,68,68,.25){% endif %};border-radius:9px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:{% if current_module.quiz_passed %}#065f46{% else %}#991b1b{% endif %};">
+            <i class="fas fa-{% if current_module.quiz_passed %}check-circle{% else %}times-circle{% endif %}"></i>
+            <strong>Module Quiz:</strong>
+            {% if current_module.quiz_passed %}Passed{% else %}Failed{% endif %}
+            — Score: {{ current_module.quiz_score|floatformat:0 }}%
+          </div>
+          <a href="{% url 'take_assessment' pk=current_module.quiz_obj.pk %}"
+             class="btn btn-outline btn-sm" style="font-size:12px;">
+            <i class="fas fa-redo"></i> Retake Quiz
+          </a>
+        </div>
+        {% endif %}
+
+        <!-- Bottom action bar -->
+        <div style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+          <div style="font-size:13px;color:var(--text-muted);">
+            <i class="fas fa-clock"></i> Estimated: {{ current_module.duration_minutes }} minutes
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            {% if current_module.has_quiz and not current_module.is_done %}
+            <a href="{% url 'take_assessment' pk=current_module.quiz_obj.pk %}"
+               class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;">
+              <i class="fas fa-question-circle"></i>
+              {% if current_module.quiz_taken %}Retake Quiz{% else %}Take Module Quiz{% endif %}
+            </a>
+            {% endif %}
+            {% if not current_module.is_done %}
+            <form method="post" action="{% url 'mark_module_complete' enrollment_pk=enrollment.pk module_pk=current_module.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-success">
+                <i class="fas fa-check"></i> Mark as Complete
+              </button>
+            </form>
+            {% else %}
+            <span class="badge badge-green" style="font-size:13px;padding:8px 14px;">
+              <i class="fas fa-check-circle"></i> Completed
+            </span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prev / Next navigation -->
+    <div style="display:flex;justify-content:space-between;">
+      {% if current_module.order > 1 %}
+        {% for m in modules %}{% if m.order == current_module.order|add:'-1' %}
+        <a href="{% url 'learning_view' pk=training.pk %}?module={{ m.pk }}" class="btn btn-outline">
+          <i class="fas fa-arrow-left"></i> Previous
+        </a>
+        {% endif %}{% endfor %}
+      {% else %}<div></div>{% endif %}
+
+      {% if current_module.order < modules|length %}
+        {% for m in modules %}{% if m.order == current_module.order|add:'1' %}
+        <a href="{% url 'learning_view' pk=training.pk %}?module={{ m.pk }}" class="btn btn-primary">
+          Next <i class="fas fa-arrow-right"></i>
+        </a>
+        {% endif %}{% endfor %}
+      {% elif progress == 100 and final_exam %}
+      <a href="{% url 'take_assessment' pk=final_exam.pk %}" class="btn btn-primary">
+        <i class="fas fa-graduation-cap"></i> Take Final Exam
+      </a>
+      {% endif %}
+    </div>
+
+    {% else %}
+    <!-- Welcome screen -->
+    <div class="card">
+      <div class="card-body" style="text-align:center;padding:60px 40px;">
+        <div style="font-size:64px;margin-bottom:16px;">📖</div>
+        <h2 style="font-size:24px;font-weight:800;margin-bottom:12px;">{{ training.title }}</h2>
+        <p style="color:var(--text-secondary);max-width:500px;margin:0 auto 24px;line-height:1.7;">{{ training.description }}</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;">
+          <div class="badge badge-blue"><i class="fas fa-clock"></i> {{ training.duration_hours }}h total</div>
+          <div class="badge badge-gray"><i class="fas fa-list"></i> {{ modules|length }} modules</div>
+          {% if final_exam %}
+          <div class="badge badge-gold"><i class="fas fa-graduation-cap"></i> Final Exam included</div>
+          {% endif %}
+          <div class="badge badge-green"><i class="fas fa-check"></i> Pass at {{ training.passing_score }}%</div>
+        </div>
+
+        <!-- Module quiz indicators -->
+        {% with quiz_count=0 %}
+        {% for m in modules %}{% if m.has_quiz %}
+          {% if forloop.first %}
+          <div style="margin-bottom:20px;font-size:13px;color:#92400e;background:#fef3c7;border-radius:8px;padding:8px 16px;display:inline-block;">
+            <i class="fas fa-question-circle"></i>
+            This training includes module quizzes after selected modules.
+          </div>
+          {% endif %}
+        {% endif %}{% endfor %}
+        {% endwith %}
+
+        {% if modules.0 %}
+        {% if training.start_date and training.start_date > today %}
+        <button class="btn btn-primary btn-lg" style="opacity:0.6;cursor:not-allowed;" disabled>
+          <i class="fas fa-clock"></i> Start Learning
+        </button>
+        <div style="margin-top:18px;">
+          <div style="font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Training starts in</div>
+          <div id="lv-countdown" style="font-size:28px;font-weight:800;color:var(--dotr-blue-light);letter-spacing:1px;">--d --h --m --s</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:6px;"><i class="fas fa-calendar"></i> {{ training.start_date|date:"F d, Y" }}</div>
+        </div>
+        <script>
+        (function(){
+          var t=new Date("{{ training.start_date|date:'Y-m-d' }}T00:00:00"),el=document.getElementById('lv-countdown');
+          function tick(){
+            var diff=t-new Date();
+            if(diff<=0){location.reload();return;}
+            var d=Math.floor(diff/86400000),h=Math.floor(diff%86400000/3600000),m=Math.floor(diff%3600000/60000),s=Math.floor(diff%60000/1000);
+            el.textContent=d+'d '+String(h).padStart(2,'0')+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s';
+          }
+          tick();setInterval(tick,1000);
+        })();
+        </script>
+        {% elif training.end_date and training.end_date < today %}
+        <button class="btn btn-primary btn-lg" style="opacity:0.6;cursor:not-allowed;" disabled>
+          <i class="fas fa-play"></i> Start Learning
+        </button>
+        <div style="margin-top:16px;padding:14px 24px;background:#fee2e2;border-radius:10px;display:inline-block;">
+          <i class="fas fa-times-circle" style="color:#ef4444;font-size:16px;"></i>
+          <span style="color:#b91c1c;font-weight:700;font-size:15px;margin-left:8px;">Sorry, this Training Program is Closed.</span>
+        </div>
+        {% else %}
+        <a href="{% url 'learning_view' pk=training.pk %}?module={{ modules.0.pk }}" class="btn btn-primary btn-lg">
+          <i class="fas fa-play"></i>
+          {% if enrollment.progress_percent > 0 %}Resume Learning{% else %}Start Learning{% endif %}
+        </a>
+        {% if training.end_date and training.end_date >= today %}
+        <div style="margin-top:20px;display:inline-flex;align-items:center;gap:10px;background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:10px 20px;">
+          <i class="fas fa-hourglass-half" style="color:#d97706;font-size:18px;"></i>
+          <div style="text-align:left;">
+            <div style="font-size:10px;color:#92400e;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Time Remaining</div>
+            <div id="welcome-remaining" style="font-size:20px;font-weight:800;color:#d97706;font-variant-numeric:tabular-nums;">--d --h --m --s</div>
+            <div style="font-size:11px;color:#92400e;margin-top:1px;"><i class="fas fa-calendar-times"></i> Ends {{ training.end_date|date:"F d, Y" }}</div>
+          </div>
+        </div>
+        <script>
+        (function(){
+          var t=new Date("{{ training.end_date|date:'Y-m-d' }}T23:59:59"),el=document.getElementById('welcome-remaining');
+          function tick(){
+            var diff=t-new Date();
+            if(diff<=0){el.textContent='Closed';el.style.color='#ef4444';return;}
+            var d=Math.floor(diff/86400000),h=Math.floor(diff%86400000/3600000),m=Math.floor(diff%3600000/60000),s=Math.floor(diff%60000/1000);
+            el.textContent=d+'d '+String(h).padStart(2,'0')+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s';
+          }
+          tick();setInterval(tick,1000);
+        })();
+        </script>
+        {% endif %}
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

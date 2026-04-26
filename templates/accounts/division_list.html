@@ -1,0 +1,239 @@
+{% extends 'base/base.html' %}
+{% block title %}Divisions & Offices{% endblock %}
+{% block page_title %}Divisions & Offices{% endblock %}
+{% block content %}
+
+<!-- ── Toolbar ── -->
+<div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:18px;">
+
+  <!-- Filter form -->
+  <form method="get" id="filter-form"
+        style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+
+    <!-- Search -->
+    <div style="position:relative;">
+      <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:12px;pointer-events:none;"></i>
+      <input type="text" name="q" value="{{ q }}" placeholder="Search name, code…"
+             style="padding:7px 10px 7px 30px;border:1px solid var(--border);border-radius:7px;font-size:13px;width:200px;background:var(--card-bg);color:var(--text-primary);"
+             oninput="debounceSubmit()">
+    </div>
+
+    <!-- Has Head filter -->
+    <select name="has_head" onchange="this.form.submit()"
+            style="padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--card-bg);color:var(--text-primary);">
+      <option value="" {% if not has_head %}selected{% endif %}>All — Head status</option>
+      <option value="1" {% if has_head == '1' %}selected{% endif %}>Has Division Head</option>
+      <option value="0" {% if has_head == '0' %}selected{% endif %}>No Head assigned</option>
+    </select>
+
+    <!-- Sort -->
+    <select name="sort" onchange="this.form.submit()"
+            style="padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-size:13px;background:var(--card-bg);color:var(--text-primary);">
+      <option value="name"    {% if sort == 'name'    %}selected{% endif %}>A → Z</option>
+      <option value="-name"   {% if sort == '-name'   %}selected{% endif %}>Z → A</option>
+      <option value="code"    {% if sort == 'code'    %}selected{% endif %}>By Code</option>
+      <option value="newest"  {% if sort == 'newest'  %}selected{% endif %}>Newest first</option>
+      <option value="oldest"  {% if sort == 'oldest'  %}selected{% endif %}>Oldest first</option>
+    </select>
+
+    <!-- preserve view mode across filter submits -->
+    <input type="hidden" name="view" id="view-hidden" value="">
+
+    {% if q or has_head %}
+    <a href="{% url 'division_list' %}" class="btn btn-outline btn-sm" style="font-size:12px;">
+      <i class="fas fa-times"></i> Clear
+    </a>
+    {% endif %}
+  </form>
+
+  <!-- Right: count + view toggle + add -->
+  <div style="display:flex;gap:8px;align-items:center;">
+    <span style="font-size:13px;color:var(--text-muted);">
+      {{ divisions|length }}{% if divisions|length != total %} of {{ total }}{% endif %}
+      unit{{ divisions|length|pluralize }}
+    </span>
+
+    <!-- View toggle -->
+    <div style="display:flex;border:1px solid var(--border);border-radius:7px;overflow:hidden;">
+      <button id="btn-tile" type="button" onclick="setView('tile')"
+              style="padding:6px 11px;border:none;cursor:pointer;font-size:13px;transition:background .15s;">
+        <i class="fas fa-th-large"></i>
+      </button>
+      <button id="btn-table" type="button" onclick="setView('table')"
+              style="padding:6px 11px;border:none;cursor:pointer;font-size:13px;transition:background .15s;border-left:1px solid var(--border);">
+        <i class="fas fa-list"></i>
+      </button>
+    </div>
+
+    <a href="{% url 'division_create' %}" class="btn btn-gold">
+      <i class="fas fa-plus"></i> Add Division
+    </a>
+  </div>
+</div>
+
+{% if not divisions %}
+<div class="card">
+  <div class="card-body" style="text-align:center;padding:60px 40px;">
+    <i class="fas fa-sitemap" style="font-size:48px;color:var(--border);margin-bottom:16px;display:block;"></i>
+    <h3 style="font-size:17px;font-weight:700;color:var(--text-muted);margin-bottom:8px;">No divisions found</h3>
+    {% if q or has_head %}
+    <p style="color:var(--text-muted);font-size:13.5px;margin-bottom:16px;">Try adjusting your filters.</p>
+    <a href="{% url 'division_list' %}" class="btn btn-outline btn-sm"><i class="fas fa-times"></i> Clear filters</a>
+    {% else %}
+    <p style="color:var(--text-muted);font-size:13.5px;margin-bottom:16px;">No organizational units configured yet.</p>
+    <a href="{% url 'division_create' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Division</a>
+    {% endif %}
+  </div>
+</div>
+{% else %}
+
+<!-- ══ TILE VIEW ══ -->
+<div id="view-tile" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;">
+  {% for div in divisions %}
+  <div class="card" style="transition:box-shadow .2s;" onmouseover="this.style.boxShadow='0 4px 20px rgba(0,0,0,.1)'" onmouseout="this.style.boxShadow=''">
+    <div style="height:5px;background:linear-gradient(90deg,var(--dotr-blue),var(--dotr-blue-mid));"></div>
+    <div style="padding:18px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text-muted);margin-bottom:4px;letter-spacing:.5px;">{{ div.code }}</div>
+          <h3 style="font-size:15px;font-weight:700;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="{{ div.name }}">{{ div.name }}</h3>
+        </div>
+        <span class="badge badge-blue" style="margin-left:8px;flex-shrink:0;">{{ div.user_set.count }} staff</span>
+      </div>
+      {% if div.description %}
+      <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:10px;">{{ div.description|truncatechars:90 }}</p>
+      {% endif %}
+      {% if div.head %}
+      <div style="font-size:12.5px;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;">
+        <i class="fas fa-user-tie" style="color:var(--dotr-blue-light);"></i>
+        <span>{{ div.head.get_full_name }}</span>
+      </div>
+      {% else %}
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;display:flex;align-items:center;gap:6px;font-style:italic;">
+        <i class="fas fa-user-slash" style="color:var(--border);"></i> No head assigned
+      </div>
+      {% endif %}
+      <div style="display:flex;gap:8px;margin-top:12px;border-top:1px solid var(--border);padding-top:12px;">
+        <a href="{% url 'division_edit' pk=div.pk %}" class="btn btn-outline btn-sm" style="flex:1;text-align:center;">
+          <i class="fas fa-edit"></i> Edit
+        </a>
+        <a href="{% url 'division_delete' pk=div.pk %}" class="btn btn-outline btn-sm"
+           style="flex:1;text-align:center;color:var(--danger);border-color:var(--danger);">
+          <i class="fas fa-trash"></i> Delete
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ══ TABLE VIEW ══ -->
+<div id="view-table" style="display:none;">
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:80px;">Code</th>
+            <th>Division / Office</th>
+            <th>Description</th>
+            <th>Division Head</th>
+            <th style="width:80px;text-align:center;">Staff</th>
+            <th style="width:120px;text-align:center;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for div in divisions %}
+          <tr>
+            <td>
+              <span style="font-family:'DM Mono',monospace;font-size:12px;background:#f1f5f9;padding:2px 7px;border-radius:4px;color:var(--text-secondary);">{{ div.code }}</span>
+            </td>
+            <td style="font-weight:600;font-size:13.5px;">{{ div.name }}</td>
+            <td style="font-size:13px;color:var(--text-secondary);">
+              {% if div.description %}{{ div.description|truncatechars:70 }}{% else %}<span style="color:var(--text-muted);font-style:italic;">—</span>{% endif %}
+            </td>
+            <td style="font-size:13px;">
+              {% if div.head %}
+              <div style="display:flex;align-items:center;gap:6px;">
+                <i class="fas fa-user-tie" style="color:var(--dotr-blue-light);font-size:11px;"></i>
+                {{ div.head.get_full_name }}
+              </div>
+              {% else %}
+              <span style="color:var(--text-muted);font-style:italic;font-size:12px;">Not assigned</span>
+              {% endif %}
+            </td>
+            <td style="text-align:center;">
+              <span class="badge badge-blue">{{ div.user_set.count }}</span>
+            </td>
+            <td style="text-align:center;">
+              <div style="display:flex;gap:5px;justify-content:center;">
+                <a href="{% url 'division_edit' pk=div.pk %}" class="btn btn-outline btn-sm" title="Edit">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a href="{% url 'division_delete' pk=div.pk %}" class="btn btn-outline btn-sm"
+                   style="color:var(--danger);border-color:var(--danger);" title="Delete">
+                  <i class="fas fa-trash"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endif %}
+
+<script>
+  // ── View preference (persisted in localStorage) ──
+  const TILE_BG   = 'var(--dotr-blue-light)';
+  const TILE_CLR  = 'white';
+  const PLAIN_BG  = 'var(--card-bg)';
+  const PLAIN_CLR = 'var(--text-primary)';
+
+  function setView(mode) {
+    localStorage.setItem('divisionView', mode);
+    applyView(mode);
+  }
+
+  function applyView(mode) {
+    const tile  = document.getElementById('view-tile');
+    const table = document.getElementById('view-table');
+    const btnTile  = document.getElementById('btn-tile');
+    const btnTable = document.getElementById('btn-table');
+    if (!tile) return;
+
+    if (mode === 'table') {
+      tile.style.display  = 'none';
+      table.style.display = '';
+      btnTable.style.background = 'var(--dotr-blue-light)';
+      btnTable.style.color = 'white';
+      btnTile.style.background  = PLAIN_BG;
+      btnTile.style.color = PLAIN_CLR;
+    } else {
+      table.style.display = 'none';
+      tile.style.display  = 'grid';
+      btnTile.style.background  = 'var(--dotr-blue-light)';
+      btnTile.style.color = 'white';
+      btnTable.style.background = PLAIN_BG;
+      btnTable.style.color = PLAIN_CLR;
+    }
+    // keep view mode when filter form is submitted
+    document.getElementById('view-hidden').value = mode;
+  }
+
+  // Restore saved preference (default: tile)
+  const saved = localStorage.getItem('divisionView') ||
+                '{{ request.GET.view|default:"tile" }}';
+  applyView(saved);
+
+  // Debounced search submit
+  let _searchTimer;
+  function debounceSubmit() {
+    clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(() => document.getElementById('filter-form').submit(), 400);
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'base/base.html' %}
+{% block title %}All Certificates{% endblock %}
+{% block page_title %}All Certificates{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h3><i class="fas fa-award" style="color:var(--dotr-gold-dark);margin-right:8px;"></i>Issued Certificates</h3>
+    <span class="badge badge-gold">{{ certificates.count }} total</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Certificate No.</th><th>Employee</th><th>Training</th><th>Date Issued</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for cert in certificates %}
+        <tr>
+          <td><code style="font-family:'DM Mono',monospace;font-size:12px;background:#f1f5f9;padding:3px 8px;border-radius:4px;">{{ cert.certificate_number }}</code></td>
+          <td><div style="font-weight:600;">{{ cert.enrollment.user.get_full_name }}</div><div style="font-size:12px;color:var(--text-muted);">{{ cert.enrollment.user.division }}</div></td>
+          <td style="font-size:13px;max-width:200px;">{{ cert.enrollment.training.title|truncatechars:50 }}</td>
+          <td style="font-size:13px;color:var(--text-muted);">{{ cert.issued_date|date:"M d, Y" }}</td>
+          <td>{% if cert.is_valid %}<span class="badge badge-green"><i class="fas fa-check"></i> Valid</span>{% else %}<span class="badge badge-red">Revoked</span>{% endif %}</td>
+          <td><a href="{% url 'certificate_detail' pk=cert.pk %}" class="btn btn-outline btn-sm"><i class="fas fa-eye"></i> View</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6"><div class="empty-state"><i class="fas fa-award"></i><p>No certificates issued yet.</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

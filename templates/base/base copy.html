@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <meta name="csrf-token" content="{{ csrf_token }}" />
+    <link rel="icon" href="{% static 'img/DOTr.png' %}" />
+  <title>{% block title %}DOTR-LMS{% endblock %} | Department of Transportation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --dotr-blue: #003087;
+      --dotr-blue-mid: #0047BD;
+      --dotr-blue-light: #2563eb;
+      --dotr-gold: #FDB913;
+      --dotr-gold-dark: #d4a017;
+      --bg-main: #f0f4f8;
+      --bg-card: #ffffff;
+      --bg-sidebar: #001a52;
+      --sidebar-w: 260px;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --border: #e2e8f0;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --radius: 12px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg-main);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+    }
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--bg-sidebar);
+      min-height: 100vh;
+      position: fixed;
+      left: 0; top: 0;
+      display: flex; flex-direction: column;
+      z-index: 100;
+      transition: transform .3s;
+    }
+    .sidebar-brand {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .brand-logo {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .brand-icon {
+      width: 40px; height: 40px; background: var(--dotr-gold);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 800; color: var(--dotr-blue);
+    }
+    .brand-text { color: white; }
+    .brand-name { font-size: 32px; font-weight: 900; line-height: 1.2; letter-spacing: 1.5px; }
+    .brand-sub { font-size: 10px; color: rgba(255,255,255,.5); letter-spacing: .0px; text-transform: uppercase; }
+    .sidebar-user {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .user-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--dotr-gold); color: var(--dotr-blue);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; flex-shrink: 0;
+    }
+    .user-info { overflow: hidden; }
+    .user-name { font-size: 13px; color: white; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-role { font-size: 11px; color: rgba(255,255,255,.45); text-transform: capitalize; }
+    .sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+    .nav-section { padding: 8px 20px 4px; font-size: 10px; color: rgba(255,255,255,.3); letter-spacing: 1px; text-transform: uppercase; font-weight: 600; }
+    .nav-item { display: block; padding: 9px 20px; color: rgba(255,255,255,.65); text-decoration: none; font-size: 13.5px; font-weight: 500; border-left: 3px solid transparent; transition: all .15s; display: flex; align-items: center; gap: 10px; }
+    .nav-item:hover { background: rgba(255,255,255,.06); color: white; border-left-color: rgba(253,185,19,.4); }
+    .nav-item.active { background: rgba(253,185,19,.12); color: var(--dotr-gold); border-left-color: var(--dotr-gold); font-weight: 600; }
+    .nav-item i { width: 18px; text-align: center; font-size: 14px; }
+    .sidebar-footer { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,.08); }
+    /* ── Main ── */
+    .main-wrap { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .topbar {
+      background: white; border-bottom: 1px solid var(--border);
+      padding: 0 28px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-title { font-size: 17px; font-weight: 700; color: var(--text-primary); }
+    .topbar-right { display: flex; align-items: center; gap: 16px; }
+    .notif-btn {
+      width: 36px; height: 36px; border-radius: 50%; background: var(--bg-main);
+      border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--text-secondary); position: relative; transition: background .15s;
+    }
+    .notif-btn:hover { background: var(--border); }
+    .notif-badge {
+      position: absolute; top: -2px; right: -2px; width: 14px; height: 14px;
+      background: var(--danger); border-radius: 50%; font-size: 9px; color: white;
+      display: flex; align-items: center; justify-content: center; font-weight: 700;
+    }
+    .content { padding: 28px; flex: 1; }
+    /* ── Cards ── */
+    .card { background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .card-header { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .card-header h3 { font-size: 15px; font-weight: 700; }
+    .card-body { padding: 22px; }
+    /* ── Stat Cards ── */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: white; border-radius: var(--radius); padding: 20px 22px;
+      display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow);
+      border-left: 4px solid transparent; transition: transform .15s, box-shadow .15s;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+    .stat-card.blue { border-left-color: var(--dotr-blue-light); }
+    .stat-card.gold { border-left-color: var(--dotr-gold); }
+    .stat-card.green { border-left-color: var(--success); }
+    .stat-card.red { border-left-color: var(--danger); }
+    .stat-card.purple { border-left-color: #8b5cf6; }
+    .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .stat-icon.blue { background: rgba(37,99,235,.1); color: var(--dotr-blue-light); }
+    .stat-icon.gold { background: rgba(253,185,19,.15); color: var(--dotr-gold-dark); }
+    .stat-icon.green { background: rgba(16,185,129,.1); color: var(--success); }
+    .stat-icon.red { background: rgba(239,68,68,.1); color: var(--danger); }
+    .stat-icon.purple { background: rgba(139,92,246,.1); color: #8b5cf6; }
+    .stat-value { font-size: 28px; font-weight: 800; line-height: 1; color: var(--text-primary); }
+    .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 3px; font-weight: 500; }
+    /* ── Buttons ── */
+    .btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 8px; font-size: 13.5px; font-weight: 600; border: none; cursor: pointer; text-decoration: none; transition: all .15s; font-family: inherit; }
+    .btn-sm { padding: 5px 12px; font-size: 12.5px; }
+    .btn-lg { padding: 11px 22px; font-size: 14.5px; }
+    .btn-primary { background: var(--dotr-blue-light); color: white; }
+    .btn-primary:hover { background: var(--dotr-blue); }
+    .btn-gold { background: var(--dotr-gold); color: var(--dotr-blue); }
+    .btn-gold:hover { background: var(--dotr-gold-dark); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text-secondary); }
+    .btn-outline:hover { border-color: var(--dotr-blue-light); color: var(--dotr-blue-light); }
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    th { text-align: left; padding: 11px 14px; background: #f8fafc; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); border-bottom: 2px solid var(--border); }
+    td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text-primary); vertical-align: middle; }
+    tr:hover td { background: #f8fafc; }
+    /* ── Badges ── */
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+    .badge-blue { background: rgba(37,99,235,.1); color: var(--dotr-blue-light); }
+    .badge-gold { background: rgba(253,185,19,.2); color: #92620c; }
+    .badge-green { background: rgba(16,185,129,.1); color: #059669; }
+    .badge-red { background: rgba(239,68,68,.1); color: var(--danger); }
+    .badge-gray { background: #f1f5f9; color: var(--text-muted); }
+    .badge-purple { background: rgba(139,92,246,.1); color: #7c3aed; }
+    /* ── Forms ── */
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+    .form-control {
+      width: 100%; padding: 9px 13px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 13.5px; font-family: inherit;
+      transition: border-color .15s, box-shadow .15s; background: white; color: var(--text-primary);
+    }
+    .form-control:focus { outline: none; border-color: var(--dotr-blue-light); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+    select.form-control { cursor: pointer; }
+    textarea.form-control { resize: vertical; min-height: 90px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    /* ── Progress ── */
+    .progress-bar { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 99px; background: var(--dotr-blue-light); transition: width .3s; }
+    .progress-fill.gold { background: var(--dotr-gold); }
+    .progress-fill.green { background: var(--success); }
+    /* ── Alerts ── */
+    .alert { padding: 12px 16px; border-radius: 8px; font-size: 13.5px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 10px; }
+    .alert-success { background: rgba(16,185,129,.1); color: #065f46; border: 1px solid rgba(16,185,129,.2); }
+    .alert-error { background: rgba(239,68,68,.1); color: #991b1b; border: 1px solid rgba(239,68,68,.2); }
+    .alert-warning { background: rgba(245,158,11,.1); color: #92400e; border: 1px solid rgba(245,158,11,.2); }
+    .alert-info { background: rgba(59,130,246,.1); color: #1e40af; border: 1px solid rgba(59,130,246,.2); }
+    /* ── Breadcrumb ── */
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; }
+    .breadcrumb a { color: var(--dotr-blue-light); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    /* ── Pagination ── */
+    .pagination { display: flex; align-items: center; gap: 4px; margin-top: 20px; }
+    .page-btn { width: 34px; height: 34px; border: 1.5px solid var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--text-secondary); text-decoration: none; font-weight: 600; transition: all .15s; }
+    .page-btn:hover, .page-btn.active { background: var(--dotr-blue-light); border-color: var(--dotr-blue-light); color: white; }
+    /* ── Utilities ── */
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-8 { gap: 8px; }
+    .gap-12 { gap: 12px; }
+    .mt-8 { margin-top: 8px; }
+    .mt-16 { margin-top: 16px; }
+    .mt-24 { margin-top: 24px; }
+    .mb-16 { margin-bottom: 16px; }
+    .mb-24 { margin-bottom: 24px; }
+    .text-sm { font-size: 12.5px; }
+    .text-muted { color: var(--text-muted); }
+    .font-bold { font-weight: 700; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+    .empty-state i { font-size: 48px; margin-bottom: 12px; opacity: .3; }
+    .empty-state p { font-size: 14px; }
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main-wrap { margin-left: 0; }
+      .form-grid, .form-grid-3, .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .stat-grid { grid-template-columns: 1fr 1fr; }
+      .content { padding: 16px; }
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+{% if user.is_authenticated %}
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-logo">
+      <img src="{% static 'img/DOTr.png' %}" style="height: auto; width: 40px; margin-bottom: 5px;margin-right: 5px;" />
+      <div class="brand-text">
+        <div class="brand-name">DOTr LMS</div>
+        <div class="brand-sub">Learning Management System</div>
+      </div>
+    </div>
+  </div>
+  {% comment %} <div class="sidebar-user">
+    <div class="user-avatar">{{ user.first_name|first }}{{ user.last_name|first }}</div>
+    <div class="user-info">
+      <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+      <div class="user-role">{{ user.get_role_display }}</div>
+    </div>
+  </div> {% endcomment %}
+  <nav class="sidebar-nav">
+    <div class="nav-section">Main</div>
+    <a href="{% url 'dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+      <i class="fas fa-tachometer-alt"></i> Dashboard
+    </a>
+    <a href="{% url 'training_catalog' %}" class="nav-item {% if 'training' in request.resolver_match.url_name|default:'' and 'manage' not in request.resolver_match.url_name|default:'' and 'request' not in request.resolver_match.url_name|default:'' and 'calendar' not in request.resolver_match.url_name|default:'' %}active{% endif %}">
+      <i class="fas fa-graduation-cap"></i> Training Catalog
+    </a>
+    <a href="{% url 'training_calendar' %}" class="nav-item {% if request.resolver_match.url_name == 'training_calendar' %}active{% endif %}">
+      <i class="fas fa-calendar-alt"></i> Training Calendar
+    </a>
+    <a href="{% url 'my_learnings' %}" class="nav-item {% if request.resolver_match.url_name == 'my_learnings' %}active{% endif %}">
+      <i class="fas fa-book-open"></i> My Learnings
+    </a>
+    <a href="{% url 'training_request_list' %}" class="nav-item {% if 'request' in request.resolver_match.url_name|default:'' %}active{% endif %}">
+      <i class="fas fa-paper-plane"></i> Training Requests
+    </a>
+
+    <div class="nav-section">Growth</div>
+    <a href="{% url 'my_competencies' %}" class="nav-item {% if request.resolver_match.url_name == 'my_competencies' %}active{% endif %}">
+      <i class="fas fa-brain"></i> My Competencies
+    </a>
+    <a href="{% url 'idp_list' %}" class="nav-item {% if 'idp' in request.resolver_match.url_name|default:'' %}active{% endif %}">
+      <i class="fas fa-route"></i> Development Plan (IDP)
+    </a>
+    <a href="{% url 'my_certificates' %}" class="nav-item {% if 'certificate' in request.resolver_match.url_name|default:'' %}active{% endif %}">
+      <i class="fas fa-certificate"></i> My Certificates
+    </a>
+
+    {% if user.role in 'admin,hr,supervisor' %}
+    <div class="nav-section">Management</div>
+    {% endif %}
+    {% if user.role in 'admin,hr' %}
+    <a href="{% url 'training_manage' %}" class="nav-item {% if request.resolver_match.url_name == 'training_manage' %}active{% endif %}">
+      <i class="fas fa-cogs"></i> Manage Trainings
+    </a>
+    <a href="{% url 'user_list' %}" class="nav-item {% if 'user' in request.resolver_match.url_name|default:'' %}active{% endif %}">
+      <i class="fas fa-users"></i> Employees
+    </a>
+    <a href="{% url 'competency_list' %}" class="nav-item {% if request.resolver_match.url_name == 'competency_list' %}active{% endif %}">
+      <i class="fas fa-star"></i> Competency Framework
+    </a>
+    <a href="{% url 'gap_analysis' %}" class="nav-item {% if request.resolver_match.url_name == 'gap_analysis' %}active{% endif %}">
+      <i class="fas fa-chart-bar"></i> Gap Analysis
+    </a>
+    <a href="{% url 'reports' %}" class="nav-item {% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
+      <i class="fas fa-chart-line"></i> Reports
+    </a>
+    <a href="{% url 'compliance_report' %}" class="nav-item {% if request.resolver_match.url_name == 'compliance_report' %}active{% endif %}">
+      <i class="fas fa-clipboard-check"></i> PRIME-HRM Compliance
+    </a>
+    <a href="{% url 'certificate_list' %}" class="nav-item">
+      <i class="fas fa-award"></i> All Certificates
+    </a>
+    <a href="{% url 'division_list' %}" class="nav-item">
+      <i class="fas fa-sitemap"></i> Divisions
+    </a>
+    {% endif %}
+    {% if user.role == 'admin' %}
+    <a href="/admin/" class="nav-item">
+      <i class="fas fa-tools"></i> Django Admin
+    </a>
+    <a href="{% url 'audit_log' %}" class="nav-item">
+      <i class="fas fa-history"></i> Audit Log
+    </a>
+    {% endif %}
+  </nav>
+  <div class="sidebar-footer">
+    <form method="post" action="{% url 'logout' %}" style="margin:0;">
+      {% csrf_token %}
+      <button type="submit" class="nav-item" style="border-radius:8px;background:none;border:none;width:100%;text-align:left;cursor:pointer;">
+        <i class="fas fa-sign-out-alt"></i> Sign Out
+      </button>
+    </form>
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="main-wrap">
+  <header class="topbar">
+    <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+    <div class="topbar-right">
+      <a href="{% url 'profile' %}" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--text-secondary);font-size:13px;font-weight:600;">
+        <div class="user-avatar" style="width:30px;height:30px;font-size:12px;">{{ user.first_name|first }}{{ user.last_name|first }}</div>
+        {{ user.get_full_name|default:user.username }}
+      </a>
+    </div>
+  </header>
+  <main class="content">
+    {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags|default:'info' }}">
+      <i class="fas fa-{% if msg.tags == 'success' %}check-circle{% elif msg.tags == 'error' %}exclamation-circle{% elif msg.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+      {{ msg }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% else %}
+<!-- Login page - no sidebar -->
+<div style="width:100%;">{% block auth_content %}{% endblock %}</div>
+{% endif %}
+<script>
+  // Mobile sidebar toggle
+  document.addEventListener('DOMContentLoaded', function() {
+    const menuBtn = document.getElementById('menuToggle');
+    const sidebar = document.getElementById('sidebar');
+    if (menuBtn) menuBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
+  });
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

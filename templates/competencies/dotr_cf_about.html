@@ -1,0 +1,70 @@
+{% extends 'base/base.html' %}
+{% block title %}About Competency Framework{% endblock %}
+{% block page_title %}About Competency Framework{% endblock %}
+{% block content %}
+<div class="card" style="max-width:860px;margin:0 auto;">
+  <div class="card-header">
+    <h3><i class="fas fa-info-circle" style="color:var(--dotr-gold-dark);margin-right:8px;"></i>What is a Competency Framework?</h3>
+  </div>
+  <div style="padding:28px 32px;line-height:1.8;color:var(--text-secondary);font-size:14px;">
+    <p style="margin-bottom:16px;">
+      A competency framework defines the <strong style="color:var(--text-primary);">knowledge, skills, and attitude/behavior</strong> needed for
+      all personnel in the organization. Each individual has its own set of competencies needed to perform the job effectively.
+      Defining each competency is necessary for the success in the organization, hence, helps to achieve the following:
+    </p>
+    <ul style="margin:0 0 24px 20px;">
+      <li>Ensure that your people demonstrate sufficient expertise.</li>
+      <li>Recruit and select new staff more effectively.</li>
+      <li>Evaluate performance more effectively.</li>
+      <li>Identify skill and competency gaps more efficiently.</li>
+      <li>Provide more customized and inclusive learning and professional development.</li>
+      <li>Plan sufficiently for succession.</li>
+      <li>Make change management processes work more efficiently.</li>
+    </ul>
+
+    <h4 style="color:var(--text-primary);margin-bottom:12px;font-size:15px;">Three Critical Principles</h4>
+    <div style="display:grid;gap:16px;">
+      <div style="background:#f8fafc;border-left:4px solid var(--dotr-gold);padding:16px 20px;border-radius:0 8px 8px 0;">
+        <strong style="color:var(--text-primary);">1. Involve the people who are doing the work.</strong>
+        <p style="margin-top:6px;">
+          These frameworks should not be solely developed by the HR people. Instead, a collaboration of the Services, Directors,
+          Division Chiefs/Unit Heads/Office-In-Charge and other relevant individuals per office helps identify and validate the
+          needed competencies per position.
+        </p>
+      </div>
+      <div style="background:#f8fafc;border-left:4px solid var(--dotr-gold);padding:16px 20px;border-radius:0 8px 8px 0;">
+        <strong style="color:var(--text-primary);">2. Communication.</strong>
+        <p style="margin-top:6px;">
+          A process by which information can be shared to open up and gauge curiosity over a framework, development or
+          performance issues — sharing its importance and objectives would align everybody's understanding to embrace changes
+          or improvement for easy implementation.
+        </p>
+      </div>
+      <div style="background:#f8fafc;border-left:4px solid var(--dotr-gold);padding:16px 20px;border-radius:0 8px 8px 0;">
+        <strong style="color:var(--text-primary);">3. Use relevant competencies.</strong>
+        <p style="margin-top:6px;">
+          The identification of relevant competencies would bring forth a new leap of understanding towards the attainment of
+          better organizational performance. Demonstrate a clear view of the overall objectives towards the attainment of
+          the Office's mandates, thrust and directions.
+        </p>
+      </div>
+    </div>
+
+    <div style="margin-top:28px;padding:20px;background:linear-gradient(135deg,#003087,#0047BD);border-radius:10px;color:white;">
+      <p>
+        Creating a competency framework is an effective method to assess, maintain, and monitor the knowledge, skills, and
+        attitude/behavior of people in the Organization. The framework allows you to measure current competency levels to make
+        sure your staff members have the expertise needed to add value to the Office's thrust. It also helps leaders/managers
+        to be decisive in the recruitment process, retention and succession strategies of the organization/office, and identify
+        the needs and address competency gaps per individual.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div style="display:flex;gap:12px;max-width:860px;margin:20px auto 0;">
+  <a href="{% url 'dotr_cf_types' %}" class="btn btn-outline"><i class="fas fa-layer-group"></i> Types of Competency</a>
+  <a href="{% url 'dotr_cf_levels' %}" class="btn btn-outline"><i class="fas fa-chart-bar"></i> Proficiency Levels</a>
+  <a href="{% url 'dotr_cf_list' %}" class="btn btn-gold"><i class="fas fa-list"></i> View Competency Framework</a>
+</div>
+{% endblock %}

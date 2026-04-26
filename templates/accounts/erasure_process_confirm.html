@@ -1,0 +1,45 @@
+{% extends 'base/base.html' %}
+{% block title %}Process Erasure Request #{{ er.pk }}{% endblock %}
+{% block page_title %}Process Data Anonymisation{% endblock %}
+{% block content %}
+<div style="max-width:620px;">
+  <div class="card" style="border-left:4px solid #dc2626;">
+    <div class="card-header">
+      <h3><i class="fas fa-cog" style="color:#dc2626;margin-right:8px;"></i>Execute Data Anonymisation</h3>
+    </div>
+    <div class="card-body">
+
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:14px 16px;margin-bottom:20px;font-size:13.5px;color:#7f1d1d;line-height:1.7;">
+        <strong><i class="fas fa-exclamation-triangle"></i> This action is irreversible.</strong>
+        The following personal data will be anonymised immediately:
+        <ul style="margin:8px 0 0 18px;">
+          <li>Name, email address, contact number, employee ID</li>
+          <li>Position, date hired, profile photograph</li>
+          <li>Password will be invalidated (account deactivated)</li>
+        </ul>
+        <div style="margin-top:8px;">Training records, audit logs, and certificates <strong>will be retained</strong> as required by COA/CSC law but de-linked from this individual.</div>
+      </div>
+
+      <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:20px;font-size:13.5px;">
+        <div style="font-size:12px;color:var(--text-muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Request Details</div>
+        <div><strong>Request #:</strong> {{ er.pk }}</div>
+        <div style="margin-top:4px;"><strong>Requester:</strong>
+          {% if er.requester %}{{ er.requester.get_full_name }} ({{ er.requester.employee_id|default:"—" }}){% else %}—{% endif %}
+        </div>
+        <div style="margin-top:4px;"><strong>Approved by:</strong> {{ er.reviewed_by.get_full_name|default:"—" }}</div>
+        <div style="margin-top:4px;"><strong>Approved on:</strong> {{ er.review_date|date:"M d, Y H:i"|default:"—" }}</div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <div style="display:flex;gap:12px;">
+          <button type="submit" class="btn btn-lg" style="background:#dc2626;color:white;border:none;">
+            <i class="fas fa-cog"></i> Confirm Anonymisation
+          </button>
+          <a href="{% url 'erasure_request_list' %}" class="btn btn-outline btn-lg">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

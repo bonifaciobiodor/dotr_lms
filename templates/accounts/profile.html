@@ -1,0 +1,109 @@
+{% extends 'base/base.html' %}
+{% block title %}My Profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block content %}
+<div class="grid-2" style="align-items:start;">
+  <div>
+    <div class="card" style="margin-bottom:18px;">
+      <div style="height:80px;background:linear-gradient(135deg,var(--dotr-blue),var(--dotr-blue-mid));border-radius:12px 12px 0 0;"></div>
+      <div class="card-body" style="padding-top:0;">
+        <div style="display:flex;align-items:flex-end;gap:16px;margin-top:-36px;margin-bottom:16px;">
+          <div style="width:72px;height:72px;border-radius:50%;background:var(--dotr-gold);color:var(--dotr-blue);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:26px;border:4px solid white;flex-shrink:0;">
+            {{ profile_user.first_name|first }}{{ profile_user.last_name|first }}
+          </div>
+          <div style="padding-bottom:4px;">
+            <div style="font-size:20px;font-weight:800;">{{ profile_user.get_full_name }}</div>
+            <div style="font-size:13px;color:var(--text-muted);">{{ profile_user.position|default:"—" }}</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          {% for icon,label,val in profile_data %}
+          <div style="background:#f8fafc;border-radius:8px;padding:11px 14px;">
+            <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;"><i class="fas fa-{{ icon }}"></i> {{ label }}</div>
+            <div style="font-size:13.5px;font-weight:600;color:var(--text-primary);">{{ val|default:"—" }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap;">
+          <a href="{% url 'user_edit' pk=profile_user.pk %}" class="btn btn-primary btn-sm"><i class="fas fa-edit"></i> Edit Profile</a>
+          <a href="{% url 'change_password' %}" class="btn btn-outline btn-sm"><i class="fas fa-key"></i> Change Password</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3>Role & Access</h3></div>
+      <div class="card-body">
+        <span class="badge {% if profile_user.role == 'admin' %}badge-red{% elif profile_user.role == 'hr' %}badge-blue{% elif profile_user.role == 'supervisor' %}badge-purple{% elif profile_user.role == 'trainer' %}badge-gold{% else %}badge-gray{% endif %}" style="font-size:14px;padding:6px 14px;">
+          <i class="fas fa-user-shield"></i> {{ profile_user.get_role_display }}
+        </span>
+        {% if profile_user.supervisor %}
+        <div style="margin-top:14px;font-size:13.5px;color:var(--text-secondary);">
+          <strong>Reports to:</strong> {{ profile_user.supervisor.get_full_name }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- RA 10173 — Data Rights Card -->
+    <div class="card" style="border-left:4px solid #2563eb;">
+      <div class="card-header">
+        <h3><i class="fas fa-shield-alt" style="color:#2563eb;margin-right:8px;"></i>Data Privacy Rights</h3>
+      </div>
+      <div class="card-body">
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;line-height:1.6;">
+          Under <strong>Republic Act No. 10173</strong> (Data Privacy Act of 2012), you have the right to access, correct, and request erasure of your personal data.
+          <a href="{% url 'privacy_notice' %}" target="_blank" style="color:#2563eb;">Read the full Privacy Notice &rarr;</a>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+          {% if profile_user.privacy_consent %}
+          <span style="background:#dcfce7;color:#166534;font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;">
+            <i class="fas fa-check-circle"></i> Consent Given
+          </span>
+          <span style="font-size:12px;color:var(--text-muted);">
+            {{ profile_user.privacy_consent_date|date:"M d, Y" }}
+          </span>
+          {% else %}
+          <span style="background:#fef9c3;color:#854d0e;font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;">
+            <i class="fas fa-clock"></i> Consent Pending
+          </span>
+          {% endif %}
+        </div>
+
+        {% if pending_erasure %}
+        <div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:10px 14px;font-size:13px;color:#92400e;">
+          <i class="fas fa-hourglass-half"></i>
+          You have an active data erasure request under review.
+        </div>
+        {% else %}
+        <a href="{% url 'erasure_request_create' %}" class="btn btn-outline btn-sm" style="color:#dc2626;border-color:#dc2626;">
+          <i class="fas fa-trash-alt"></i> Request Data Erasure
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <div class="card-header"><h3><i class="fas fa-book-open" style="color:var(--dotr-blue-light);margin-right:8px;"></i>Recent Trainings</h3><a href="{% url 'my_learnings' %}" class="btn btn-outline btn-sm">All</a></div>
+      <div>
+        {% for enr in enrollments %}
+        <a href="{% url 'learning_view' pk=enr.training.pk %}" style="display:block;padding:14px 18px;border-bottom:1px solid var(--border);text-decoration:none;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div style="font-weight:600;font-size:13.5px;color:var(--text-primary);">{{ enr.training.title|truncatechars:50 }}</div>
+            <span class="badge {% if enr.status == 'completed' %}badge-green{% else %}badge-blue{% endif %}">{{ enr.get_status_display }}</span>
+          </div>
+          <div style="margin-top:8px;">
+            <div class="progress-bar"><div class="progress-fill {% if enr.status == 'completed' %}green{% endif %}" style="width:{{ enr.progress_percent }}%"></div></div>
+            <div class="text-sm text-muted" style="margin-top:3px;">{{ enr.progress_percent }}% complete</div>
+          </div>
+        </a>
+        {% empty %}
+        <div class="empty-state"><i class="fas fa-book"></i><p>No training enrollments yet.</p></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

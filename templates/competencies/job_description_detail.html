@@ -1,0 +1,120 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ jd.position_title }} — Job Description{% endblock %}
+{% block page_title %}Job Description{% endblock %}
+{% block content %}
+
+<!-- Header bar -->
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;gap:12px;flex-wrap:wrap;">
+  <div>
+    <h2 style="font-size:20px;font-weight:700;color:var(--text-primary);">{{ jd.position_title }}</h2>
+    <span style="font-size:13px;color:var(--text-muted);">
+      {% if jd.division %}{{ jd.division }} &bull; {% endif %}
+      {% if jd.salary_grade %}SG-{{ jd.salary_grade }} &bull; {% endif %}
+      {{ jd.employment_status|default:"" }}
+    </span>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a href="{% url 'job_description_edit' pk=jd.pk %}" class="btn btn-outline btn-sm"><i class="fas fa-edit"></i> Edit</a>
+    <a href="{% url 'job_analysis_create' jd_pk=jd.pk %}" class="btn btn-gold btn-sm"><i class="fas fa-search-plus"></i> Conduct Job Analysis</a>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
+
+  <!-- Left column: job description content -->
+  <div>
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header"><h3><i class="fas fa-id-badge" style="color:var(--dotr-gold-dark);margin-right:8px;"></i> Position Information</h3></div>
+      <div class="card-body">
+        <dl style="display:grid;grid-template-columns:180px 1fr;gap:8px 16px;font-size:13.5px;">
+          <dt style="color:var(--text-muted);font-weight:600;">Office / Unit</dt>
+          <dd>{{ jd.office_unit|default:"—" }}</dd>
+          <dt style="color:var(--text-muted);font-weight:600;">Immediate Supervisor</dt>
+          <dd>{{ jd.immediate_supervisor|default:"—" }}</dd>
+          <dt style="color:var(--text-muted);font-weight:600;">Salary Grade</dt>
+          <dd>{% if jd.salary_grade %}SG-{{ jd.salary_grade }}{% else %}—{% endif %}</dd>
+          <dt style="color:var(--text-muted);font-weight:600;">Employment Status</dt>
+          <dd>{{ jd.employment_status|default:"—" }}</dd>
+          <dt style="color:var(--text-muted);font-weight:600;">Created By</dt>
+          <dd>{{ jd.created_by.get_full_name|default:jd.created_by.username|default:"—" }}</dd>
+          <dt style="color:var(--text-muted);font-weight:600;">Last Updated</dt>
+          <dd>{{ jd.updated_at|date:"M d, Y" }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header"><h3><i class="fas fa-tasks" style="color:var(--dotr-gold-dark);margin-right:8px;"></i> Duties and Responsibilities</h3></div>
+      <div class="card-body">
+        <div style="white-space:pre-line;font-size:13.5px;line-height:1.7;">{{ jd.duties_and_responsibilities }}</div>
+      </div>
+    </div>
+
+    {% if jd.performance_standards %}
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header"><h3><i class="fas fa-bullseye" style="color:var(--dotr-gold-dark);margin-right:8px;"></i> Performance Standards / KRAs</h3></div>
+      <div class="card-body">
+        <div style="white-space:pre-line;font-size:13.5px;line-height:1.7;">{{ jd.performance_standards }}</div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <div class="card-header"><h3><i class="fas fa-graduation-cap" style="color:var(--dotr-gold-dark);margin-right:8px;"></i> Qualification Standards (CSC)</h3></div>
+      <div class="card-body">
+        <dl style="display:grid;grid-template-columns:140px 1fr;gap:10px 16px;font-size:13.5px;">
+          <dt style="color:var(--text-muted);font-weight:600;">Education</dt>
+          <dd>{{ jd.education|default:"—" }}</dd>
+          <dt style="color:var(--text-muted);font-weight:600;">Training</dt>
+          <dd>{{ jd.training|default:"—" }}</dd>
+          <dt style="color:var(--text-muted);font-weight:600;">Experience</dt>
+          <dd>{{ jd.experience|default:"—" }}</dd>
+          <dt style="color:var(--text-muted);font-weight:600;">Eligibility</dt>
+          <dd>{{ jd.eligibility|default:"—" }}</dd>
+        </dl>
+        {% if jd.knowledge_skills_abilities %}
+        <hr style="border:none;border-top:1px solid var(--border);margin:14px 0;">
+        <p style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Knowledge, Skills &amp; Abilities</p>
+        <div style="white-space:pre-line;font-size:13.5px;line-height:1.7;">{{ jd.knowledge_skills_abilities }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right column: Job Analyses -->
+  <div>
+    <div class="card">
+      <div class="card-header" style="justify-content:space-between;">
+        <h3><i class="fas fa-search-plus" style="color:var(--dotr-gold-dark);margin-right:8px;"></i> Job Analyses</h3>
+        <a href="{% url 'job_analysis_create' jd_pk=jd.pk %}" class="btn btn-gold btn-sm"><i class="fas fa-plus"></i></a>
+      </div>
+      <div class="card-body" style="padding:0;">
+        {% if analyses %}
+          {% for analysis in analyses %}
+          <a href="{% url 'job_analysis_detail' pk=analysis.pk %}"
+             style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);text-decoration:none;color:inherit;transition:background .15s;"
+             onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+            <div>
+              <div style="font-weight:600;font-size:13.5px;">Analysis #{{ analysis.pk }}</div>
+              <div style="font-size:12px;color:var(--text-muted);">
+                {{ analysis.analysis_date|date:"M d, Y"|default:"—" }} &bull;
+                {{ analysis.competency_mappings.count }} competenc{{ analysis.competency_mappings.count|pluralize:"y,ies" }}
+              </div>
+            </div>
+            <span class="badge {% if analysis.status == 'applied' %}badge-green{% elif analysis.status == 'finalized' %}badge-blue{% else %}badge-gray{% endif %}">
+              {{ analysis.get_status_display }}
+            </span>
+          </a>
+          {% endfor %}
+        {% else %}
+          <div style="padding:24px;text-align:center;color:var(--text-muted);font-size:13px;">
+            No analyses yet.<br>
+            <a href="{% url 'job_analysis_create' jd_pk=jd.pk %}" style="color:var(--dotr-blue-light);">Conduct the first analysis</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

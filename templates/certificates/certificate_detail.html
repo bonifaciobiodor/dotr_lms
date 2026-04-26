@@ -1,0 +1,725 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% block title %}Certificate — {{ cert.certificate_number }}{% endblock %}
+{% block page_title %}Certificate of Completion{% endblock %}
+
+{% block extra_css %}
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Cinzel:wght@400;600;700;900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+/* ══ Page layout ══ */
+.cert-page-wrap {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* ══ Action bar ══ */
+.cert-actions {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 18px; flex-wrap: wrap; gap: 10px;
+}
+
+/* ══ Certificate outer frame ══ */
+.cert-frame {
+  background: #ffffff;
+  border: 10px solid #1a1a2e;       /* thick dark outer border */
+  box-shadow: 0 12px 48px rgba(0,0,0,.22);
+  position: relative;
+  font-family: 'EB Garamond', Georgia, serif;
+}
+
+/* Gold inner border line */
+.cert-frame::before {
+  content: '';
+  position: absolute; inset: 8px;
+  border: 2.5px solid #b8860b;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ══ Watermark seal ══ */
+.cert-watermark {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 620px; height: 620px;
+  opacity: .05;
+  pointer-events: none;
+  z-index: 0;
+  font-size: 220px;
+  display: flex; align-items: center; justify-content: center;
+  color: #003087;
+  font-weight: 900;
+}
+
+/* ══ Content wrapper (above watermark) ══ */
+.cert-content {
+  position: relative; z-index: 2;
+  padding: 32px 48px 28px;
+}
+
+/* ══ Top header row ══ */
+.cert-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.cert-seal {
+  width: 80px; height: 80px; object-fit: contain; flex-shrink: 0;
+}
+.cert-seal-placeholder {
+  width: 80px; height: 80px; border-radius: 50%;
+  background: radial-gradient(circle, #003087, #001a52);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 32px; flex-shrink: 0;
+  border: 3px solid #b8860b;
+}
+.cert-ph-flag {
+  width: 100px; height: 100px; object-fit: contain; flex-shrink: 0;
+}
+.cert-ph-flag-placeholder {
+  width: 100px; height: 100px; display: flex; align-items: center;
+  justify-content: center; font-size: 52px; flex-shrink: 0;
+}
+
+/* ══ Header center ══ */
+.cert-header-center {
+  flex: 1; text-align: center; padding: 0 20px;
+}
+.cert-republic {
+  font-family: 'Cinzel', serif;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: #333; margin-bottom: 4px;
+}
+.cert-dept {
+  font-family: 'Cinzel', serif;
+  font-size: 22px; font-weight: 700;
+  color: #003087; line-height: 1.1; margin-bottom: 2px;
+}
+.cert-title-big {
+  font-family: 'Cinzel', serif;
+  font-size: 52px; font-weight: 900;
+  color: #003087; line-height: 1; letter-spacing: 2px;
+  margin-bottom: 0;
+}
+.cert-subtitle {
+  font-family: 'Cinzel', serif;
+  font-size: 13.5px; font-weight: 600;
+  letter-spacing: 6px; text-transform: uppercase;
+  color: #b8860b; margin-top: 2px;
+}
+
+/* ══ Divider line ══ */
+.cert-divider {
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, #b8860b 20%, #b8860b 80%, transparent 100%);
+  margin: 14px 0;
+}
+.cert-divider-thin {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, #b8860b 30%, #b8860b 70%, transparent 100%);
+  margin: 10px 0;
+}
+
+/* ══ Body ══ */
+.cert-body {
+  text-align: center;
+  padding: 4px 20px;
+}
+.cert-presented-to {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 18px; color: #444; margin-bottom: 6px;
+}
+.cert-awardee {
+  font-family: 'Cinzel', serif;
+  font-size: 42px; font-weight: 700;
+  color: #0d0d0d; letter-spacing: 1px;
+  line-height: 1.15; margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.cert-body-text {
+  font-family: 'EB Garamond', serif;
+  font-size: 17px; color: #444; margin-bottom: 8px;
+  font-style: italic;
+}
+.cert-training-title {
+  font-family: 'Libre Baskerville', serif;
+  font-size: 20px; font-weight: 700;
+  color: #1a1a1a; margin: 6px auto 10px;
+  max-width: 680px; line-height: 1.4;
+}
+
+/* ══ Given this / venue line ══ */
+.cert-given-line {
+  font-family: 'EB Garamond', serif;
+  font-size: 15px; color: #333; margin-bottom: 10px;
+}
+.cert-given-line strong { font-weight: 700; color: #003087; }
+
+/* ══ Details grid ══ */
+.cert-details {
+  display: flex; justify-content: center; gap: 0;
+  margin: 8px 0 10px;
+  border-top: 1px solid #ddd; border-bottom: 1px solid #ddd;
+  padding: 10px 0;
+}
+.cert-detail-item {
+  text-align: center; padding: 0 20px;
+  border-right: 1px solid #ddd;
+  font-family: 'EB Garamond', serif;
+  font-size: 14px;
+}
+.cert-detail-item:last-child { border-right: none; }
+.cert-detail-label { font-weight: 700; color: #003087; }
+.cert-detail-val   { color: #333; }
+
+/* ══ Competency row ══ */
+.cert-competency-row {
+  font-family: 'EB Garamond', serif;
+  font-size: 15px; color: #333;
+  display: flex; justify-content: center; gap: 0;
+  flex-wrap: wrap; margin-bottom: 4px;
+}
+.cert-comp-item {
+  padding: 0 18px; border-right: 1px solid #bbb;
+}
+.cert-comp-item:last-child { border-right: none; }
+
+/* ══ Bottom row: QR + cert number | signatures ══ */
+.cert-bottom-row {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-top: 14px; gap: 16px;
+}
+
+/* QR + cert number block */
+.cert-qr-block {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+  min-width: 130px;
+}
+.cert-qr-block img,
+.cert-qr-block #qr-canvas {
+  width: 110px; height: 110px; display: block;
+}
+.cert-cert-number {
+  font-family: 'EB Garamond', serif;
+  font-size: 11.5px; font-weight: 700;
+  color: #1a1a1a; letter-spacing: .5px;
+}
+
+/* Signatories block */
+.cert-sigs {
+  display: flex; gap: 48px; justify-content: flex-end; align-items: flex-end; flex: 1;
+}
+.cert-sig { text-align: center; }
+.cert-sig-line {
+  width: 200px; border-bottom: 1.5px solid #1a1a1a;
+  margin: 0 auto 5px; height: 40px;
+  display: flex; align-items: flex-end; justify-content: center;
+  font-family: 'EB Garamond', serif; font-style: italic;
+  font-size: 15px; color: #003087; padding-bottom: 3px;
+}
+.cert-sig-name {
+  font-family: 'Libre Baskerville', serif;
+  font-size: 13px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .3px;
+  color: #1a1a1a;
+}
+.cert-sig-pos {
+  font-family: 'EB Garamond', serif;
+  font-size: 12px; color: #555;
+  max-width: 200px; line-height: 1.4;
+  text-align: center; margin-top: 2px;
+}
+
+/* ══ Validity / revoked banner ══ */
+.cert-revoked-banner {
+  background: #ef4444; color: white;
+  text-align: center; padding: 8px;
+  font-family: 'Cinzel', serif;
+  font-size: 13px; font-weight: 700; letter-spacing: 2px;
+}
+
+/* ══ Print ══ */
+@media print {
+  body * { visibility: hidden; }
+  .cert-frame, .cert-frame * { visibility: visible; }
+  .cert-modern-wrap, .cert-modern-wrap * { visibility: visible; }
+  .cert-frame {
+    position: fixed; inset: 0; margin: 0;
+    box-shadow: none;
+    border-width: 10px;
+  }
+  .cert-modern-wrap {
+    position: fixed; inset: 0; margin: 0;
+    box-shadow: none;
+  }
+  .cert-actions, .no-print { display: none !important; }
+  #qr-canvas canvas { display: none !important; }
+  #qr-canvas img    { display: block !important; }
+}
+
+/* ══ Modern layout ══ */
+.cert-modern-wrap {
+  display: flex;
+  width: 100%;
+  min-height: 520px;
+  background: #fff;
+  box-shadow: 0 12px 48px rgba(0,0,0,.22);
+  overflow: hidden;
+  position: relative;
+  font-family: 'Open Sans', Arial, sans-serif;
+}
+
+/* Left white content area */
+.cert-modern-left {
+  flex: 1;
+  padding: 32px 40px 28px 36px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Red top accent bar */
+.cert-modern-top-bar {
+  height: 7px;
+  background: #cc2027;
+  position: absolute; top: 0; left: 0; right: 0;
+}
+
+/* Red bottom accent bar */
+.cert-modern-bottom-bar {
+  height: 7px;
+  background: #cc2027;
+  position: absolute; bottom: 0; left: 0; right: 0;
+}
+
+.cert-modern-logos {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 14px; margin-bottom: 18px;
+}
+.cert-modern-logos img { height: 56px; width: auto; object-fit: contain; }
+.cert-modern-logos-text {
+  font-size: 11px; line-height: 1.4;
+  color: #333;
+}
+.cert-modern-logos-text strong {
+  display: block; font-size: 13px; font-weight: 800;
+  color: #002060; letter-spacing: .3px;
+}
+
+.cert-modern-cert-title {
+  font-size: 52px; font-weight: 900; color: #002060;
+  line-height: 1; letter-spacing: 1px;
+  margin-bottom: 0;
+}
+.cert-modern-cert-subtitle {
+  font-size: 16px; font-weight: 700; color: #cc2027;
+  text-transform: uppercase; letter-spacing: 4px;
+  margin-bottom: 18px;
+}
+
+.cert-modern-presented {
+  font-size: 14px; color: #444; margin-bottom: 6px;
+}
+.cert-modern-awardee {
+  font-size: 34px; font-weight: 900; color: #cc2027;
+  text-transform: uppercase; line-height: 1.1; margin-bottom: 10px;
+  letter-spacing: .5px;
+}
+.cert-modern-body-text {
+  font-size: 14px; color: #444; margin-bottom: 6px;
+}
+.cert-modern-training-title {
+  font-size: 18px; font-weight: 800; color: #002060;
+  text-transform: uppercase; line-height: 1.3; margin-bottom: 14px;
+}
+
+.cert-modern-given {
+  font-size: 12px; color: #555; line-height: 1.6;
+  max-width: 380px; margin-bottom: 20px;
+}
+.cert-modern-given a { color: #cc2027; }
+
+.cert-modern-signatory { margin-top: auto; }
+.cert-modern-sig-line {
+  width: 200px; border-bottom: 1.5px solid #333;
+  margin-bottom: 5px;
+}
+.cert-modern-sig-name {
+  font-size: 13px; font-weight: 800; color: #002060;
+  text-transform: uppercase;
+}
+.cert-modern-sig-pos {
+  font-size: 11.5px; color: #555; max-width: 240px; line-height: 1.4;
+}
+
+/* SVG red wave separator */
+.cert-modern-wave {
+  position: absolute;
+  top: 0; bottom: 0;
+  right: 295px;
+  width: 70px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Right blue sidebar */
+.cert-modern-right {
+  width: 300px;
+  flex-shrink: 0;
+  background: #002060;
+  color: #fff;
+  padding: 28px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  z-index: 2;
+}
+
+.cert-modern-sidebar-section { border-bottom: 1px solid rgba(255,255,255,.15); padding-bottom: 12px; }
+.cert-modern-sidebar-section:last-child { border-bottom: none; }
+
+.cert-modern-sidebar-label {
+  font-size: 10px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 1.5px; color: #7ab3e0; margin-bottom: 4px;
+}
+.cert-modern-sidebar-val {
+  font-size: 13.5px; font-weight: 600; color: #fff; line-height: 1.4;
+}
+.cert-modern-sidebar-sub {
+  font-size: 12px; color: rgba(255,255,255,.7); margin-top: 1px;
+}
+
+.cert-modern-qr {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.cert-modern-qr img,
+.cert-modern-qr #qr-canvas-modern {
+  width: 110px; height: 110px;
+  background: #fff; border-radius: 4px; display: block;
+}
+
+.cert-modern-cert-id-box {
+  background: rgba(255,255,255,.12);
+  border-radius: 6px; padding: 8px 12px;
+  margin-top: auto;
+}
+.cert-modern-cert-id-label {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px; color: #7ab3e0; margin-bottom: 3px;
+}
+.cert-modern-cert-id-val {
+  font-size: 13px; font-weight: 800; color: #fff; letter-spacing: .5px;
+  word-break: break-all;
+}
+
+.cert-modern-revoked {
+  background: #ef4444; color: white; text-align: center;
+  padding: 7px; font-size: 12px; font-weight: 700;
+  letter-spacing: 2px; position: absolute; bottom: 7px; left: 0; right: 300px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% with t=tmpl %}
+<div class="cert-page-wrap">
+
+  <!-- Action bar (shared by both layouts) -->
+  <div class="cert-actions no-print">
+    <div style="display:flex;align-items:center;gap:10px;">
+      {% if cert.is_valid %}
+      <span class="badge badge-green" style="font-size:13px;padding:6px 12px;"><i class="fas fa-shield-alt"></i> Valid &amp; Authentic</span>
+      {% else %}
+      <span class="badge badge-red" style="font-size:13px;padding:6px 12px;"><i class="fas fa-ban"></i> Revoked</span>
+      {% endif %}
+      <span style="font-size:13px;color:var(--text-muted);font-family:'DM Mono',monospace;">{{ cert.certificate_number }}</span>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="window.print()" class="btn btn-outline"><i class="fas fa-print"></i> Print / Save PDF</button>
+      <a href="{% url 'verify_certificate' cert_number=cert.certificate_number %}" target="_blank" class="btn btn-outline">
+        <i class="fas fa-qrcode"></i> Verify
+      </a>
+      {% if user.role in 'admin,hr' %}
+      <a href="{% url 'template_list' %}" class="btn btn-outline btn-sm"><i class="fas fa-palette"></i> Edit Template</a>
+      {% if cert.is_valid %}
+      <a href="{% url 'certificate_revoke' pk=cert.pk %}" class="btn btn-danger btn-sm"><i class="fas fa-ban"></i> Revoke</a>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  {% if t.layout_type == 'modern' %}
+  <!-- ══ MODERN CERTIFICATE (Blue Sidebar) ══ -->
+  <div class="cert-modern-wrap">
+    <!-- Red top & bottom accent bars -->
+    <div class="cert-modern-top-bar"></div>
+    <div class="cert-modern-bottom-bar"></div>
+
+    <!-- Left content area -->
+    <div class="cert-modern-left" style="display:flex;flex-direction:column;">
+
+      <!-- Logos row -->
+      <div class="cert-modern-logos">
+        {% if t.logo_left %}
+        <img src="{{ t.logo_left.url }}" alt="DOTR Seal">
+        {% endif %}
+        <div class="cert-modern-logos-text">
+          Republic of the Philippines
+          <strong>{{ t.header_text }}</strong>
+        </div>
+        {% if t.logo_right %}
+        <img src="{{ t.logo_right.url }}" alt="Logo">
+        {% endif %}
+      </div>
+
+      <!-- Certificate title -->
+      <div class="cert-modern-cert-title">CERTIFICATE</div>
+      <div class="cert-modern-cert-subtitle">of Completion</div>
+
+      <!-- Body -->
+      <div class="cert-modern-presented">{{ t.intro_line }}</div>
+      <div class="cert-modern-awardee">{{ cert.enrollment.user.get_full_name }}</div>
+      <div class="cert-modern-body-text">{{ t.body_after }}</div>
+      <div class="cert-modern-training-title">{{ cert.enrollment.training.title }}</div>
+
+      <!-- Given line -->
+      <div class="cert-modern-given">
+        Given this {{ cert.issued_date|date:"d F Y" }}
+        {% if cert.enrollment.training.venue %}
+        at {{ cert.enrollment.training.venue }}
+        {% endif %}
+      </div>
+
+      <!-- Signatory -->
+      <div class="cert-modern-signatory" style="margin-top:auto;">
+        <div class="cert-modern-sig-line"></div>
+        <div class="cert-modern-sig-name">{{ t.signatory1_name|default:"____________________" }}</div>
+        <div class="cert-modern-sig-pos">{{ t.signatory1_position }}</div>
+      </div>
+    </div>
+
+    <!-- SVG red wave -->
+    <svg class="cert-modern-wave" viewBox="0 0 70 600" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M70,0 C30,150 10,300 70,600 L70,600 L70,0 Z" fill="#002060"/>
+      <path d="M60,0 C20,150 0,300 60,600 L62,600 C2,300 22,150 62,0 Z" fill="#cc2027"/>
+    </svg>
+
+    <!-- Right blue sidebar -->
+    <div class="cert-modern-right">
+
+      <!-- Competency -->
+      <div class="cert-modern-sidebar-section">
+        <div class="cert-modern-sidebar-label">Competency Completed</div>
+        {% with comp=cert.enrollment.training.competencies.first %}
+        {% if comp %}
+        <div class="cert-modern-sidebar-val">{{ comp.get_category_display }}</div>
+        <div class="cert-modern-sidebar-sub">{{ t.competency_level_label }}</div>
+        {% else %}
+        <div class="cert-modern-sidebar-val">{{ cert.enrollment.training.get_training_type_display }}</div>
+        <div class="cert-modern-sidebar-sub">{{ t.competency_level_label }}</div>
+        {% endif %}
+        {% endwith %}
+      </div>
+
+      <!-- Domain -->
+      {% with comp=cert.enrollment.training.competencies.first %}
+      {% if comp %}
+      <div class="cert-modern-sidebar-section">
+        <div class="cert-modern-sidebar-label">Domain</div>
+        <div class="cert-modern-sidebar-val">{{ comp.name }}</div>
+      </div>
+      {% endif %}
+      {% endwith %}
+
+      <!-- Training details -->
+      <div class="cert-modern-sidebar-section">
+        <div class="cert-modern-sidebar-label">Training Details</div>
+        <div class="cert-modern-sidebar-val" style="font-size:12px;">Date: {{ cert.issued_date|date:"d F Y" }}</div>
+        {% if cert.enrollment.training.duration_hours %}
+        <div class="cert-modern-sidebar-sub">{{ cert.enrollment.training.duration_hours }} hours training credited</div>
+        {% endif %}
+      </div>
+
+      <!-- QR code -->
+      <div class="cert-modern-qr">
+        {% if cert.qr_code %}
+        <img src="{{ cert.qr_code.url }}" alt="Scan to verify">
+        {% else %}
+        <div id="qr-canvas-modern" style="display:flex;align-items:center;justify-content:center;font-size:10px;color:#666;">QR CODE</div>
+        {% endif %}
+      </div>
+
+      <!-- Certificate ID -->
+      <div class="cert-modern-cert-id-box" style="margin-top:auto;">
+        <div class="cert-modern-cert-id-label">Certificate ID</div>
+        <div class="cert-modern-cert-id-val">{{ cert.certificate_number }}</div>
+      </div>
+
+    </div><!-- end right sidebar -->
+
+    {% if not cert.is_valid %}
+    <div class="cert-modern-revoked">⚠ THIS CERTIFICATE HAS BEEN REVOKED</div>
+    {% endif %}
+  </div><!-- end cert-modern-wrap -->
+
+  {% else %}
+  <!-- ══ CLASSIC CERTIFICATE ══ -->
+  <div class="cert-frame">
+    <div class="cert-watermark"><img src="{% static 'img/DOTrb.jpg' %}" width="90%" height="90%" /></div>
+
+    <div class="cert-content">
+      <!-- TOP ROW: Seal | Header | PH Flag -->
+      <div class="cert-top">
+        {% if t.logo_left %}
+        <img src="{{ t.logo_left.url }}" class="cert-seal" alt="DOTR Seal" style="margin-left: 90px;">
+        {% else %}
+        <div class="cert-seal-placeholder">🚗</div>
+        {% endif %}
+
+        <div class="cert-header-center">
+          <div class="cert-republic">Republic of the Philippines</div>
+          <div class="cert-dept">{{ t.header_text }}</div>
+          <div class="cert-title-big">CERTIFICATE</div>
+          <div class="cert-subtitle">of &nbsp; Completion</div>
+        </div>
+
+        {% if t.logo_right %}
+        <img src="{{ t.logo_right.url }}" class="cert-ph-flag" alt="PH Flag" style="margin-right: 90px;>
+        {% else %}
+        <div class="cert-ph-flag-placeholder">🇵🇭</div>
+        {% endif %}
+      </div>
+
+      <div class="cert-divider"></div>
+
+      <!-- BODY -->
+      <div class="cert-body">
+        <div class="cert-presented-to">{{ t.intro_line }}</div>
+        <div class="cert-awardee">{{ cert.enrollment.user.get_full_name }}</div>
+        <div class="cert-body-text">{{ t.body_after }}</div>
+        <div class="cert-training-title">{{ cert.enrollment.training.title }}</div>
+
+        <div class="cert-divider-thin"></div>
+
+        <!-- Given this line -->
+        <div class="cert-given-line">
+          Given this <strong>{{ cert.issued_date|date:"F d, Y" }}</strong>
+          {% if cert.enrollment.training.venue %}
+          at {{ cert.enrollment.training.venue }}
+          {% endif %}
+        </div>
+
+        <!-- Details row -->
+        <div class="cert-details">
+          <div class="cert-detail-item">
+            <div><span class="cert-detail-label">Actual Date of Training:</span> <span class="cert-detail-val">{{ cert.issued_date|date:"m/d/Y" }}</span></div>
+            {% if cert.enrollment.training.duration_hours %}
+            <div class="cert-detail-val">{{ cert.enrollment.training.duration_hours }} hours training credited</div>
+            {% endif %}
+          </div>
+          {% if t.show_score and cert.enrollment.final_score %}
+          <div class="cert-detail-item">
+            <span class="cert-detail-label">Final Score:</span>
+            <span class="cert-detail-val" style="color:#003087;font-weight:700;"> {{ cert.enrollment.final_score }}%</span>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Competency row -->
+        <div class="cert-competency-row">
+          {% if cert.enrollment.training.training_type %}
+          <div class="cert-comp-item">
+            <span class="cert-detail-label">Competency Completed:</span>
+            {{ cert.enrollment.training.get_training_type_display }}
+          </div>
+          {% endif %}
+          <div class="cert-comp-item">
+            <span class="cert-detail-label">Mode:</span>
+            {{ cert.enrollment.training.get_delivery_mode_display }}
+          </div>
+          {% if cert.enrollment.training.passing_score %}
+          <div class="cert-comp-item">
+            <span class="cert-detail-label">Passing Score:</span>
+            {{ cert.enrollment.training.passing_score }}%
+          </div>
+          {% endif %}
+        </div>
+
+        {% if t.footer_note %}
+        <div style="font-family:'EB Garamond',serif;font-size:13px;color:#888;margin-top:6px;font-style:italic;">
+          {{ t.footer_note }}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- BOTTOM ROW: QR + Cert No. | Signatures -->
+      <div class="cert-bottom-row">
+
+        <!-- QR code + cert number -->
+        <div class="cert-qr-block">
+          {% if cert.qr_code %}
+          <img src="{{ cert.qr_code.url }}" alt="Scan to verify">
+          {% else %}
+          <div id="qr-canvas"></div>
+          {% endif %}
+          <div class="cert-cert-number">{{ cert.certificate_number }}</div>
+        </div>
+
+        <!-- Signatures -->
+        <div class="cert-sigs">
+          <div class="cert-sig">
+            <div class="cert-sig-line">{{ t.signatory1_name }}</div>
+            <div class="cert-sig-name">{{ t.signatory1_name|default:"____________________" }}</div>
+            <div class="cert-sig-pos">{{ t.signatory1_position }}</div>
+          </div>
+          {% if t.signatory2_name %}
+          <div class="cert-sig">
+            <div class="cert-sig-line">{{ t.signatory2_name }}</div>
+            <div class="cert-sig-name">{{ t.signatory2_name }}</div>
+            <div class="cert-sig-pos">{{ t.signatory2_position }}</div>
+          </div>
+          {% endif %}
+        </div>
+
+      </div><!-- end cert-bottom-row -->
+    </div><!-- end cert-content -->
+
+    {% if not cert.is_valid %}
+    <div class="cert-revoked-banner">⚠ THIS CERTIFICATE HAS BEEN REVOKED</div>
+    {% endif %}
+  </div><!-- end cert-frame -->
+  {% endif %}<!-- end layout type -->
+
+</div>
+{% endwith %}
+{% endblock %}
+
+{% block extra_js %}
+{% if not cert.qr_code %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var verifyUrl = window.location.origin + '{{ cert.verify_url }}';
+  var qrOpts = { text: verifyUrl, width: 110, height: 110, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M };
+
+  function applyQR(elId, bgWhite) {
+    var el = document.getElementById(elId);
+    if (!el) return;
+    el.innerHTML = '';
+    if (bgWhite) el.style.background = '#fff';
+    new QRCode(el, qrOpts);
+    setTimeout(function () {
+      var canvas = el.querySelector('canvas');
+      var img    = el.querySelector('img');
+      if (canvas) canvas.style.display = 'none';
+      if (img)    { img.style.margin = '0'; img.style.display = 'block'; }
+    }, 200);
+  }
+
+  applyQR('qr-canvas', false);
+  applyQR('qr-canvas-modern', true);
+});
+</script>
+{% endif %}
+{% endblock %}

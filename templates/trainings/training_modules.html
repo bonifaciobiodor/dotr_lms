@@ -1,0 +1,460 @@
+{% extends 'base/base.html' %}
+{% block title %}Manage Modules — {{ training.title|truncatechars:40 }}{% endblock %}
+{% block page_title %}Manage Modules{% endblock %}
+
+{% block extra_css %}
+<style>
+  .module-card {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: box-shadow .15s, border-color .15s;
+  }
+  .module-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); border-color: #cbd5e1; }
+  .module-card.editing { border-color: var(--dotr-blue-light); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+  .module-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; cursor: pointer; user-select: none;
+  }
+  .module-header:hover { background: #f8fafc; }
+  .drag-handle { color: var(--text-muted); cursor: grab; font-size: 14px; flex-shrink: 0; }
+  .module-order {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--dotr-blue-light); color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+  }
+  .module-body { display: none; padding: 0 16px 16px; border-top: 1px solid var(--border); }
+  .module-body.open { display: block; }
+  .content-preview {
+    background: #f8fafc; border-radius: 8px; padding: 12px 14px;
+    font-size: 13px; color: var(--text-secondary); line-height: 1.6;
+    max-height: 80px; overflow: hidden; position: relative;
+    border: 1px solid var(--border); margin-bottom: 12px;
+  }
+  .content-preview::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+    height: 30px; background: linear-gradient(transparent, #f8fafc);
+  }
+  .ct-badge { display: inline-flex; align-items: center; gap: 4px; }
+  /* Inline edit form */
+  .edit-form { background: #f0f7ff; border-radius: 10px; padding: 18px; margin-top: 12px; border: 1px solid rgba(37,99,235,.15); }
+  .edit-form .form-label { color: var(--dotr-blue); font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px; }
+  textarea.tall { min-height: 160px; resize: vertical; font-family: inherit; }
+  /* Delete confirm modal */
+  .modal-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:200; align-items:center; justify-content:center; }
+  .modal-backdrop.open { display:flex; }
+  .modal-box { background:white; border-radius:14px; padding:28px; max-width:420px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,.2); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="breadcrumb">
+  <a href="{% url 'training_manage' %}">Manage Trainings</a>
+  <i class="fas fa-chevron-right" style="font-size:10px;"></i>
+  <a href="{% url 'training_detail' pk=training.pk %}">{{ training.title|truncatechars:40 }}</a>
+  <i class="fas fa-chevron-right" style="font-size:10px;"></i>
+  <span>Modules</span>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start;">
+
+  <!-- ── Left: Module List ── -->
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div>
+        <span style="font-size:15px;font-weight:700;">{{ modules|length }} Module{{ modules|length|pluralize }}</span>
+        <span style="font-size:13px;color:var(--text-muted);margin-left:8px;">— drag to reorder</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <a href="{% url 'assessment_list' training_pk=training.pk %}" class="btn btn-outline btn-sm">
+          <i class="fas fa-question-circle"></i> Assessments
+        </a>
+        <a href="{% url 'training_detail' pk=training.pk %}" class="btn btn-outline btn-sm">
+          <i class="fas fa-eye"></i> Preview
+        </a>
+      </div>
+    </div>
+
+    <!-- Module cards -->
+    <div id="modules-list">
+      {% for module in modules %}
+      <div class="module-card" id="mc-{{ module.pk }}" data-id="{{ module.pk }}">
+
+        <!-- Header row (click to expand) -->
+        <div class="module-header" onclick="toggleModule({{ module.pk }})">
+          <span class="drag-handle" title="Drag to reorder"><i class="fas fa-grip-vertical"></i></span>
+          <div class="module-order">{{ module.order }}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              {{ module.title }}
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;display:flex;gap:10px;align-items:center;">
+              <span class="ct-badge">
+                <i class="fas fa-{% if module.content_type == 'video' %}video{% elif module.content_type == 'pdf' %}file-pdf{% elif module.content_type == 'quiz' %}question-circle{% elif module.content_type == 'assignment' %}tasks{% else %}file-alt{% endif %}"></i>
+                {{ module.get_content_type_display }}
+              </span>
+              <span><i class="fas fa-clock"></i> {{ module.duration_minutes }}min</span>
+              {% if module.is_required %}<span class="badge badge-red" style="font-size:10px;">Required</span>{% endif %}
+            </div>
+          </div>
+          <!-- Quick actions -->
+          <div style="display:flex;gap:6px;" onclick="event.stopPropagation()">
+            <button onclick="openEdit({{ module.pk }})" class="btn btn-outline btn-sm" title="Edit module">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button onclick="openDelete({{ module.pk }}, '{{ module.title|escapejs }}')" class="btn btn-danger btn-sm" title="Delete module">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+          <i class="fas fa-chevron-down" id="chev-{{ module.pk }}" style="color:var(--text-muted);font-size:12px;transition:transform .2s;flex-shrink:0;"></i>
+        </div>
+
+        <!-- Expanded body: preview + inline edit form -->
+        <div class="module-body" id="mb-{{ module.pk }}">
+          <!-- Content preview -->
+          {% if module.content %}
+          <div style="margin-top:12px;">
+            <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;">Content Preview</div>
+            <div class="content-preview">{{ module.content|linebreaksbr }}</div>
+          </div>
+          {% endif %}
+          {% if module.description %}
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:8px;line-height:1.6;">
+            <strong>Description:</strong> {{ module.description }}
+          </div>
+          {% endif %}
+
+          <!-- Inline edit form (hidden by default, shown by openEdit()) -->
+          <div class="edit-form" id="ef-{{ module.pk }}" style="display:none;">
+            <div style="font-size:14px;font-weight:700;color:var(--dotr-blue-light);margin-bottom:14px;">
+              <i class="fas fa-edit"></i> Edit Module
+            </div>
+            <form method="post" action="{% url 'training_modules' pk=training.pk %}" enctype="multipart/form-data">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="edit">
+              <input type="hidden" name="module_id" value="{{ module.pk }}">
+
+              <div class="form-group">
+                <label class="form-label">Title *</label>
+                <input type="text" name="title" class="form-control" value="{{ module.title }}" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea name="description" class="form-control" rows="2">{{ module.description }}</textarea>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                <div class="form-group">
+                  <label class="form-label">Content Type</label>
+                  <select name="content_type" class="form-control" onchange="toggleFileUpload(this, 'edit-file-{{ module.pk }}', 'edit-content-{{ module.pk }}')">
+                    {% for val, label in content_types %}
+                    <option value="{{ val }}" {% if module.content_type == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Duration (min)</label>
+                  <input type="number" name="duration_minutes" class="form-control" value="{{ module.duration_minutes }}" min="1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Order</label>
+                  <input type="number" name="order" class="form-control" value="{{ module.order }}" min="1">
+                </div>
+              </div>
+
+              <div class="form-group" id="edit-content-{{ module.pk }}">
+                <label class="form-label">Content / URL</label>
+                <textarea name="content" class="form-control tall">{{ module.content }}</textarea>
+                <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">
+                  Paste text, YouTube URL, YouTube embed code, or document URL.
+                </div>
+              </div>
+
+              <div class="form-group" id="edit-file-{{ module.pk }}" {% if module.content_type != 'video' and module.content_type != 'pdf' %}style="display:none"{% endif %}>
+                <label class="form-label">Upload File</label>
+                {% if module.file_attachment %}
+                <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+                  <i class="fas fa-{% if module.content_type == 'pdf' %}file-pdf{% else %}file-video{% endif %}"></i>
+                  Current: {{ module.file_attachment.name|slice:"13:" }}
+                  <span style="color:#888;">— upload a new file to replace it</span>
+                </div>
+                {% endif %}
+                <input type="file" name="file_attachment" class="form-control"
+                  accept="{% if module.content_type == 'pdf' %}.pdf,.docx,.doc{% else %}video/*{% endif %}">
+                <div class="file-hint" style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">
+                  {% if module.content_type == 'pdf' %}Accepted: pdf, docx, doc · Max 200 MB. Leave empty to keep existing file or use URL above.
+                  {% else %}Accepted: mp4, webm, ogg, mov · Max 200 MB. Leave empty to keep existing file or use URL/embed code above.{% endif %}
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;font-weight:600;">
+                  <input type="checkbox" name="is_required" {% if module.is_required %}checked{% endif %}
+                         style="width:16px;height:16px;accent-color:var(--dotr-blue-light);">
+                  Mark as Required
+                </label>
+              </div>
+
+              <div style="display:flex;gap:10px;">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Changes</button>
+                <button type="button" onclick="closeEdit({{ module.pk }})" class="btn btn-outline">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="card">
+        <div class="empty-state" style="padding:60px;">
+          <i class="fas fa-list-ol" style="font-size:40px;opacity:.2;"></i>
+          <p style="margin-top:12px;font-size:15px;">No modules yet. Add your first module using the form →</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Reorder save button (shown after drag) -->
+    <div id="reorder-bar" style="display:none;margin-top:12px;">
+      <div style="background:#f0f7ff;border:1px solid rgba(37,99,235,.2);border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:13.5px;color:var(--dotr-blue-light);font-weight:600;">
+          <i class="fas fa-arrows-alt"></i> Order changed — save to apply
+        </span>
+        <form method="post" action="{% url 'training_modules' pk=training.pk %}" id="reorder-form">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="reorder">
+          <div id="reorder-inputs"></div>
+          <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> Save Order</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right: Add Module Form ── -->
+  <div class="card" style="position:sticky;top:80px;">
+    <div class="card-header" style="background:linear-gradient(135deg,var(--dotr-blue),var(--dotr-blue-mid));border-radius:12px 12px 0 0;">
+      <h3 style="color:white;font-size:15px;"><i class="fas fa-plus-circle" style="margin-right:8px;"></i>Add New Module</h3>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{% url 'training_modules' pk=training.pk %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add">
+
+        <div class="form-group">
+          <label class="form-label">Module Title *</label>
+          <input type="text" name="title" class="form-control" placeholder="e.g. Introduction and Overview" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea name="description" class="form-control" rows="2" placeholder="Brief summary of what this module covers..."></textarea>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="form-group">
+            <label class="form-label">Content Type</label>
+            <select name="content_type" class="form-control" onchange="toggleFileUpload(this, 'add-file-row', 'add-content-row')">
+              {% for val, label in content_types %}
+              <option value="{{ val }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Duration (min)</label>
+            <input type="number" name="duration_minutes" class="form-control" value="30" min="1">
+          </div>
+        </div>
+
+        <div class="form-group" id="add-content-row">
+          <label class="form-label">Content</label>
+          <textarea name="content" class="form-control" rows="5"
+                    placeholder="Paste the lesson text, YouTube URL, YouTube embed code, or document URL here..."></textarea>
+          <div style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">
+            Supports text, YouTube links, embed codes, and document URLs.
+          </div>
+        </div>
+
+        <div class="form-group" id="add-file-row" style="display:none;">
+          <label class="form-label">Upload File</label>
+          <input type="file" name="file_attachment" class="form-control" accept="video/*">
+          <div class="file-hint" style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">
+            Accepted: mp4, webm, ogg, mov · Max 200 MB. Leave empty to use URL/embed code above.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;font-weight:600;">
+            <input type="checkbox" name="is_required" checked
+                   style="width:16px;height:16px;accent-color:var(--dotr-blue-light);">
+            Mark as Required
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">
+          <i class="fas fa-plus"></i> Add Module
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete Confirmation Modal ── -->
+<div class="modal-backdrop" id="delete-modal">
+  <div class="modal-box">
+    <div style="font-size:36px;text-align:center;margin-bottom:12px;">🗑️</div>
+    <h3 style="font-size:17px;font-weight:800;text-align:center;margin-bottom:8px;">Delete Module?</h3>
+    <p style="font-size:13.5px;color:var(--text-secondary);text-align:center;margin-bottom:20px;">
+      You are about to delete <strong id="delete-module-name"></strong>.<br>
+      This action cannot be undone. All learner progress for this module will also be deleted.
+    </p>
+    <form method="post" action="{% url 'training_modules' pk=training.pk %}" id="delete-form">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="delete">
+      <input type="hidden" name="module_id" id="delete-module-id" value="">
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button type="submit" class="btn btn-danger btn-lg"><i class="fas fa-trash"></i> Yes, Delete</button>
+        <button type="button" onclick="closeDelete()" class="btn btn-outline btn-lg">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Show/hide file upload based on content type ──
+function toggleFileUpload(select, fileRowId, contentRowId) {
+  const val = select.value;
+  const needsFile = val === 'video' || val === 'pdf';
+  const fileRow = document.getElementById(fileRowId);
+  const contentRow = document.getElementById(contentRowId);
+  if (fileRow) {
+    fileRow.style.display = needsFile ? 'block' : 'none';
+    const input = fileRow.querySelector('input[type=file]');
+    const hint  = fileRow.querySelector('.file-hint');
+    if (input) input.accept = val === 'video' ? 'video/*' : '.pdf,.docx,.doc';
+    if (hint)  hint.textContent = val === 'video'
+      ? 'Accepted: mp4, webm, ogg, mov · Max 200 MB. Leave empty to use URL/embed code above.'
+      : 'Accepted: pdf, docx, doc · Max 200 MB. Leave empty to use URL above.';
+  }
+  // Content/URL field stays visible for all types
+  if (contentRow) contentRow.style.display = 'block';
+}
+
+// ── Toggle module expand/collapse ──
+function toggleModule(id) {
+  const body = document.getElementById('mb-' + id);
+  const chev = document.getElementById('chev-' + id);
+  const card = document.getElementById('mc-' + id);
+  const isOpen = body.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.module-body.open').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.fa-chevron-down').forEach(el => el.style.transform = '');
+  document.querySelectorAll('.module-card.editing').forEach(el => el.classList.remove('editing'));
+  if (!isOpen) {
+    body.classList.add('open');
+    chev.style.transform = 'rotate(180deg)';
+  }
+}
+
+// ── Open inline edit form ──
+function openEdit(id) {
+  // Expand the card first
+  const body = document.getElementById('mb-' + id);
+  const chev = document.getElementById('chev-' + id);
+  const card = document.getElementById('mc-' + id);
+  document.querySelectorAll('.module-body.open').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.fa-chevron-down').forEach(el => el.style.transform = '');
+  document.querySelectorAll('.edit-form').forEach(el => el.style.display = 'none');
+  document.querySelectorAll('.module-card.editing').forEach(el => el.classList.remove('editing'));
+  body.classList.add('open');
+  chev.style.transform = 'rotate(180deg)';
+  card.classList.add('editing');
+  // Show edit form
+  const ef = document.getElementById('ef-' + id);
+  ef.style.display = 'block';
+  ef.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeEdit(id) {
+  document.getElementById('ef-' + id).style.display = 'none';
+  document.getElementById('mc-' + id).classList.remove('editing');
+}
+
+// ── Delete modal ──
+function openDelete(id, title) {
+  document.getElementById('delete-module-id').value = id;
+  document.getElementById('delete-module-name').textContent = '"' + title + '"';
+  document.getElementById('delete-modal').classList.add('open');
+}
+
+function closeDelete() {
+  document.getElementById('delete-modal').classList.remove('open');
+}
+document.getElementById('delete-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeDelete();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDelete(); });
+
+// ── Drag-to-reorder (vanilla JS, no library needed) ──
+(function () {
+  const list = document.getElementById('modules-list');
+  if (!list) return;
+  let dragging = null;
+
+  list.querySelectorAll('.module-card').forEach(card => {
+    card.setAttribute('draggable', true);
+
+    card.addEventListener('dragstart', e => {
+      dragging = card;
+      setTimeout(() => card.style.opacity = '.4', 0);
+    });
+    card.addEventListener('dragend', () => {
+      card.style.opacity = '';
+      dragging = null;
+      updateOrderBadges();
+      showReorderBar();
+    });
+    card.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (dragging && dragging !== card) {
+        const rect = card.getBoundingClientRect();
+        const mid = rect.top + rect.height / 2;
+        if (e.clientY < mid) {
+          list.insertBefore(dragging, card);
+        } else {
+          list.insertBefore(dragging, card.nextSibling);
+        }
+      }
+    });
+  });
+
+  function updateOrderBadges() {
+    list.querySelectorAll('.module-card').forEach((card, i) => {
+      const badge = card.querySelector('.module-order');
+      if (badge) badge.textContent = i + 1;
+    });
+  }
+
+  function showReorderBar() {
+    const bar = document.getElementById('reorder-bar');
+    const inputsDiv = document.getElementById('reorder-inputs');
+    inputsDiv.innerHTML = '';
+    list.querySelectorAll('.module-card').forEach((card, i) => {
+      const id = card.dataset.id;
+      const inp = document.createElement('input');
+      inp.type = 'hidden';
+      inp.name = 'order_' + id;
+      inp.value = i + 1;
+      inputsDiv.appendChild(inp);
+    });
+    bar.style.display = 'block';
+  }
+})();
+</script>
+{% endblock %}

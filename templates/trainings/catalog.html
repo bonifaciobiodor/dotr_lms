@@ -1,0 +1,186 @@
+{% extends 'base/base.html' %}
+{% block title %}Training Catalog{% endblock %}
+{% block page_title %}Training Catalog{% endblock %}
+{% block content %}
+<!-- Search & Filters -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-body" style="padding:16px 20px;">
+    <form method="get" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <div style="flex:2;min-width:200px;position:relative;">
+        <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;"></i>
+        <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Search trainings..." style="padding-left:36px;">
+      </div>
+      <select name="mode" class="form-control" style="flex:1;min-width:150px;">
+        <option value="">All Modes</option>
+        {% for val, label in modes %}<option value="{{ val }}" {% if request.GET.mode == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <select name="type" class="form-control" style="flex:1;min-width:150px;">
+        <option value="">All Types</option>
+        {% for val, label in types %}<option value="{{ val }}" {% if request.GET.type == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Search</button>
+      <a href="{% url 'training_catalog' %}" class="btn btn-outline">Clear</a>
+      {% if user.role in 'admin,hr,trainer' %}
+      <a href="{% url 'training_create' %}" class="btn btn-gold"><i class="fas fa-plus"></i> New Training</a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- View Toggle -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+  <p style="color:var(--text-muted);font-size:14px;">{{ page_obj.paginator.count }} training program{{ page_obj.paginator.count|pluralize }} found</p>
+  <div style="display:flex;gap:6px;background:var(--bg-secondary);border-radius:8px;padding:4px;">
+    <button id="btn-tile" onclick="setView('tile')" title="Tile View"
+      style="border:none;background:transparent;padding:7px 12px;border-radius:6px;cursor:pointer;color:var(--text-muted);font-size:14px;transition:all .15s;">
+      <i class="fas fa-th"></i>
+    </button>
+    <button id="btn-table" onclick="setView('table')" title="Table View"
+      style="border:none;background:transparent;padding:7px 12px;border-radius:6px;cursor:pointer;color:var(--text-muted);font-size:14px;transition:all .15s;">
+      <i class="fas fa-list"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Tile View -->
+<div id="view-tile" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;margin-bottom:24px;">
+  {% for training in page_obj %}
+  <div class="card" style="display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 32px rgba(0,0,0,.12)'" onmouseout="this.style.transform='';this.style.boxShadow=''">
+    <!-- Card Top Color Band -->
+    <div style="height:6px;background:{% if training.training_type == 'mandatory' %}linear-gradient(90deg,#ef4444,#f87171){% elif training.training_type == 'specialized' %}linear-gradient(90deg,#8b5cf6,#a78bfa){% else %}linear-gradient(90deg,var(--dotr-blue-light),#60a5fa){% endif %};"></div>
+    <div style="padding:20px;flex:1;display:flex;flex-direction:column;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+        <div>
+          <span class="badge {% if training.training_type == 'mandatory' %}badge-red{% elif training.training_type == 'specialized' %}badge-purple{% else %}badge-blue{% endif %}" style="margin-bottom:8px;">
+            {% if training.training_type == 'mandatory' %}<i class="fas fa-exclamation-circle"></i>{% endif %}
+            {{ training.get_training_type_display }}
+          </span>
+          <h3 style="font-size:15px;font-weight:700;line-height:1.3;color:var(--text-primary);">{{ training.title }}</h3>
+        </div>
+      </div>
+      <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;flex:1;margin-bottom:14px;">{{ training.description|truncatechars:100 }}</p>
+      <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted);">
+          <i class="fas fa-{% if training.delivery_mode == 'online' %}laptop{% elif training.delivery_mode == 'f2f' %}chalkboard-teacher{% else %}layer-group{% endif %}"></i>
+          {{ training.get_delivery_mode_display }}
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted);">
+          <i class="fas fa-clock"></i> {{ training.duration_hours }}h
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted);">
+          <i class="fas fa-users"></i> {{ training.enrollment_count }}/{{ training.max_participants }}
+        </div>
+      </div>
+      {% if training.start_date %}
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
+        <i class="fas fa-calendar" style="color:var(--dotr-gold-dark);"></i> {{ training.start_date|date:"M d, Y" }}
+      </div>
+      {% endif %}
+      <!-- Progress bar for slots -->
+      <div style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px;">
+          <span>Slots</span><span>{{ training.enrollment_count }}/{{ training.max_participants }}</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:{% widthratio training.enrollment_count training.max_participants 100 %}%"></div></div>
+      </div>
+      <a href="{% url 'training_detail' pk=training.pk %}" class="btn btn-primary" style="justify-content:center;"><i class="fas fa-arrow-right"></i> View Details</a>
+    </div>
+  </div>
+  {% empty %}
+  <div style="grid-column:1/-1;">
+    <div class="empty-state card" style="padding:60px;"><i class="fas fa-graduation-cap"></i><p>No training programs found. <a href="{% url 'training_catalog' %}">Clear filters</a></p></div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Table View -->
+<div id="view-table" style="display:none;margin-bottom:24px;">
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Type</th>
+            <th>Mode</th>
+            <th>Duration</th>
+            <th>Date</th>
+            <th>Slots</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for training in page_obj %}
+          <tr>
+            <td>
+              <div style="font-weight:600;font-size:13.5px;">{{ training.title }}</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">{{ training.description|truncatechars:70 }}</div>
+            </td>
+            <td>
+              <span class="badge {% if training.training_type == 'mandatory' %}badge-red{% elif training.training_type == 'specialized' %}badge-purple{% else %}badge-blue{% endif %}">
+                {% if training.training_type == 'mandatory' %}<i class="fas fa-exclamation-circle"></i>{% endif %}
+                {{ training.get_training_type_display }}
+              </span>
+            </td>
+            <td><span class="badge badge-gray">{{ training.get_delivery_mode_display }}</span></td>
+            <td style="white-space:nowrap;"><i class="fas fa-clock" style="color:var(--text-muted);margin-right:4px;"></i>{{ training.duration_hours }}h</td>
+            <td style="white-space:nowrap;">
+              {% if training.start_date %}
+              <i class="fas fa-calendar" style="color:var(--dotr-gold-dark);margin-right:4px;"></i>{{ training.start_date|date:"M d, Y" }}
+              {% else %}<span style="color:var(--text-muted);">—</span>{% endif %}
+            </td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div class="progress-bar" style="width:70px;"><div class="progress-fill" style="width:{% widthratio training.enrollment_count training.max_participants 100 %}%"></div></div>
+                <span style="font-size:12px;font-weight:600;white-space:nowrap;">{{ training.enrollment_count }}/{{ training.max_participants }}</span>
+              </div>
+            </td>
+            <td>
+              <a href="{% url 'training_detail' pk=training.pk %}" class="btn btn-outline btn-sm" title="View Details"><i class="fas fa-eye"></i> View</a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7">
+              <div class="empty-state"><i class="fas fa-graduation-cap"></i><p>No training programs found. <a href="{% url 'training_catalog' %}">Clear filters</a></p></div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+  {% if page_obj.has_previous %}<a href="?{% if q %}q={{ q }}&{% endif %}{% if request.GET.mode %}mode={{ request.GET.mode }}&{% endif %}{% if request.GET.type %}type={{ request.GET.type }}&{% endif %}page={{ page_obj.previous_page_number }}" class="page-btn"><i class="fas fa-chevron-left"></i></a>{% endif %}
+  {% for num in page_obj.paginator.page_range %}
+    {% if page_obj.number == num %}<span class="page-btn active">{{ num }}</span>
+    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}<a href="?{% if q %}q={{ q }}&{% endif %}{% if request.GET.mode %}mode={{ request.GET.mode }}&{% endif %}{% if request.GET.type %}type={{ request.GET.type }}&{% endif %}page={{ num }}" class="page-btn">{{ num }}</a>{% endif %}
+  {% endfor %}
+  {% if page_obj.has_next %}<a href="?{% if q %}q={{ q }}&{% endif %}{% if request.GET.mode %}mode={{ request.GET.mode }}&{% endif %}{% if request.GET.type %}type={{ request.GET.type }}&{% endif %}page={{ page_obj.next_page_number }}" class="page-btn"><i class="fas fa-chevron-right"></i></a>{% endif %}
+</div>
+{% endif %}
+
+<script>
+  const ACTIVE_STYLE = 'background:var(--dotr-blue);color:#fff;';
+  const INACTIVE_STYLE = 'background:transparent;color:var(--text-muted);';
+
+  function setView(mode) {
+    const isTile = mode === 'tile';
+    document.getElementById('view-tile').style.display = isTile ? 'grid' : 'none';
+    document.getElementById('view-table').style.display = isTile ? 'none' : 'block';
+    document.getElementById('btn-tile').style.cssText += isTile ? ACTIVE_STYLE : INACTIVE_STYLE;
+    document.getElementById('btn-table').style.cssText += isTile ? INACTIVE_STYLE : ACTIVE_STYLE;
+    localStorage.setItem('catalog_view', mode);
+  }
+
+  // Restore saved preference on load
+  (function () {
+    const saved = localStorage.getItem('catalog_view') || 'tile';
+    setView(saved);
+  })();
+</script>
+{% endblock %}

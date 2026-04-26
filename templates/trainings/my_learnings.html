@@ -1,0 +1,72 @@
+{% extends 'base/base.html' %}
+{% block title %}My Learnings{% endblock %}
+{% block page_title %}My Learnings{% endblock %}
+{% block content %}
+{% if not enrollments %}
+<div class="empty-state card" style="padding:80px;"><i class="fas fa-book-open"></i><p style="margin-top:12px;font-size:15px;">You haven't enrolled in any trainings yet.</p><a href="{% url 'training_catalog' %}" class="btn btn-primary" style="margin-top:16px;"><i class="fas fa-search"></i> Browse Catalog</a></div>
+{% else %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;">
+  {% for enr in enrollments %}
+  <div class="card" style="display:flex;flex-direction:column;">
+    <div style="height:5px;background:{% if enr.status == 'completed' %}var(--success){% elif enr.status == 'in_progress' %}var(--dotr-blue-light){% else %}var(--border){% endif %};"></div>
+    <div style="padding:18px;flex:1;display:flex;flex-direction:column;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <span class="badge {% if enr.status == 'completed' %}badge-green{% elif enr.status == 'in_progress' %}badge-blue{% else %}badge-gray{% endif %}">
+          {% if enr.status == 'completed' %}<i class="fas fa-check"></i> Completed{% elif enr.status == 'in_progress' %}<i class="fas fa-play"></i> In Progress{% else %}<i class="fas fa-book"></i> Enrolled{% endif %}
+        </span>
+        {% if enr.final_score %}<span style="font-size:13px;font-weight:700;color:{% if enr.final_score >= enr.training.passing_score %}var(--success){% else %}var(--danger){% endif %};">{{ enr.final_score }}%</span>{% endif %}
+      </div>
+      <h3 style="font-size:15px;font-weight:700;line-height:1.3;flex:1;margin-bottom:12px;">{{ enr.training.title }}</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+        <span class="badge badge-gray"><i class="fas fa-clock"></i> {{ enr.training.duration_hours }}h</span>
+        <span class="badge badge-gray">{{ enr.training.get_delivery_mode_display }}</span>
+      </div>
+      <div style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:5px;"><span>Progress</span><span>{{ enr.progress_percent }}%</span></div>
+        <div class="progress-bar"><div class="progress-fill {% if enr.status == 'completed' %}green{% endif %}" style="width:{{ enr.progress_percent }}%"></div></div>
+      </div>
+      {% if enr.status == 'completed' %}
+      <div style="display:flex;gap:8px;">
+        <a href="{% url 'learning_view' pk=enr.training.pk %}" class="btn btn-outline btn-sm" style="flex:1;justify-content:center;"><i class="fas fa-redo"></i> Review</a>
+        {% if enr.certificate %}<a href="{% url 'certificate_detail' pk=enr.certificate.pk %}" class="btn btn-gold btn-sm" style="flex:1;justify-content:center;"><i class="fas fa-certificate"></i> Certificate</a>{% endif %}
+      </div>
+      {% else %}
+      {% if enr.training.start_date and enr.training.start_date > today %}
+      <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;opacity:0.6;cursor:not-allowed;" disabled>
+        <i class="fas fa-clock"></i> Start Learning
+      </button>
+      <div style="text-align:center;margin-top:8px;">
+        <div style="font-size:10px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Starts in</div>
+        <div id="cd-{{ enr.pk }}" style="font-size:15px;font-weight:800;color:var(--dotr-blue-light);">--d --h --m --s</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;"><i class="fas fa-calendar"></i> {{ enr.training.start_date|date:"M d, Y" }}</div>
+      </div>
+      <script>
+      (function(){
+        var t=new Date("{{ enr.training.start_date|date:'Y-m-d' }}T00:00:00"),el=document.getElementById('cd-{{ enr.pk }}');
+        function tick(){
+          var diff=t-new Date();
+          if(diff<=0){location.reload();return;}
+          var d=Math.floor(diff/86400000),h=Math.floor(diff%86400000/3600000),m=Math.floor(diff%3600000/60000),s=Math.floor(diff%60000/1000);
+          el.textContent=d+'d '+String(h).padStart(2,'0')+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s';
+        }
+        tick();setInterval(tick,1000);
+      })();
+      </script>
+      {% elif enr.training.end_date and enr.training.end_date < today %}
+      <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;opacity:0.6;cursor:not-allowed;" disabled>
+        <i class="fas fa-play"></i> Start Learning
+      </button>
+      <div style="margin-top:8px;padding:8px 12px;background:#fee2e2;border-radius:8px;text-align:center;">
+        <i class="fas fa-times-circle" style="color:#ef4444;"></i>
+        <span style="color:#b91c1c;font-weight:600;font-size:12px;margin-left:4px;">Sorry, this Training Program is Closed.</span>
+      </div>
+      {% else %}
+      <a href="{% url 'learning_view' pk=enr.training.pk %}" class="btn btn-primary btn-sm" style="justify-content:center;"><i class="fas fa-play"></i> Continue Learning</a>
+      {% endif %}
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

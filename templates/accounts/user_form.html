@@ -1,0 +1,154 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<style>
+  .field-error { color: var(--danger); font-size: 12px; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+  .field-error::before { content: '\f071'; font-family: 'Font Awesome 6 Free'; font-weight: 900; font-size: 11px; }
+  .input-error { border-color: var(--danger) !important; background: #fff5f5; }
+</style>
+<div style="max-width:800px;">
+  <div class="card">
+    <div class="card-header"><h3>{{ title }}</h3></div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        {# ── Non-field / form-level errors ── #}
+        {% if form.non_field_errors %}
+        <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#991b1b;">
+          <strong><i class="fas fa-exclamation-circle"></i> Please correct the errors below:</strong>
+          <ul style="margin:6px 0 0 16px;padding:0;">
+            {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+          </ul>
+        </div>
+        {% elif form.errors %}
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;color:#92400e;">
+          <i class="fas fa-exclamation-triangle"></i> Please correct the highlighted fields below.
+        </div>
+        {% endif %}
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">First Name *</label>
+            {{ form.first_name }}
+            {% for e in form.first_name.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last Name *</label>
+            {{ form.last_name }}
+            {% for e in form.last_name.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Username *</label>
+            {{ form.username }}
+            {% for e in form.username.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+            <small style="color:var(--text-muted);font-size:12px;">Used to log in. Letters, digits and @/./+/-/_ only.</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            {{ form.email }}
+            {% for e in form.email.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+
+        {% if form.password %}
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Password *</label>
+            {{ form.password }}
+            {% for e in form.password.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+            <small style="color:var(--text-muted);font-size:12px;">Min. 8 characters — uppercase, lowercase, number, and special character.</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm Password *</label>
+            {{ form.confirm_password }}
+            {% for e in form.confirm_password.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Employee ID</label>
+            {{ form.employee_id }}
+            {% for e in form.employee_id.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Role</label>
+            {{ form.role }}
+            {% for e in form.role.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Division</label>
+            {{ form.division }}
+            {% for e in form.division.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Position / Designation</label>
+            {{ form.position }}
+            {% for e in form.position.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label class="form-label">Salary Grade</label>
+            {{ form.salary_grade }}
+            {% for e in form.salary_grade.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Employment Status</label>
+            {{ form.employment_status }}
+            {% for e in form.employment_status.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date Hired</label>
+            {{ form.date_hired }}
+            {% for e in form.date_hired.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Contact Number</label>
+            {{ form.contact_number }}
+            {% for e in form.contact_number.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="form-group">
+            <label class="form-label">Direct Supervisor</label>
+            {{ form.supervisor }}
+            {% for e in form.supervisor.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          </div>
+        </div>
+
+        {% if form.avatar %}
+        <div class="form-group">
+          <label class="form-label">Profile Photo</label>
+          {{ form.avatar }}
+          {% for e in form.avatar.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+          {% if edit_user and edit_user.avatar %}
+          <div style="margin-top:8px;">
+            <img src="{{ edit_user.avatar.url }}" alt="Current photo"
+                 style="height:64px;width:64px;border-radius:50%;object-fit:cover;border:2px solid var(--border);">
+            <span style="font-size:12px;color:var(--text-muted);margin-left:8px;">Current photo</span>
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <div style="display:flex;gap:12px;margin-top:16px;">
+          <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save"></i> Save</button>
+          <a href="{% url 'user_list' %}" class="btn btn-outline btn-lg">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends 'base/base.html' %}
+{% block title %}Manage Trainings{% endblock %}
+{% block page_title %}Manage Training Programs{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+  <p style="color:var(--text-muted);font-size:14px;">{{ trainings.count }} total programs</p>
+  <div style="display:flex;gap:10px;">
+    <a href="{% url 'training_calendar' %}" class="btn btn-outline"><i class="fas fa-calendar-alt"></i> Calendar View</a>
+    <a href="{% url 'training_create' %}" class="btn btn-gold"><i class="fas fa-plus"></i> New Training Program</a>
+  </div>
+</div>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Code</th><th>Title</th><th>Type</th><th>Mode</th><th>Status</th><th>Enrolled</th><th>Completion</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for t in trainings %}
+        <tr>
+          <td><code style="font-family:'DM Mono',monospace;font-size:12px;background:#f1f5f9;padding:2px 7px;border-radius:4px;">{{ t.code }}</code></td>
+          <td><div style="font-weight:600;font-size:13.5px;">{{ t.title }}</div>{% if t.start_date %}<div class="text-sm text-muted">{{ t.start_date|date:"M d, Y" }}</div>{% endif %}</td>
+          <td><span class="badge {% if t.training_type == 'mandatory' %}badge-red{% elif t.training_type == 'specialized' %}badge-purple{% else %}badge-blue{% endif %}">{{ t.get_training_type_display }}</span></td>
+          <td><span class="badge badge-gray">{{ t.get_delivery_mode_display }}</span></td>
+          <td>
+            {% if t.status == 'published' %}<span class="badge badge-green">Published</span>
+            {% elif t.status == 'completed' %}<span class="badge badge-gray">Completed</span>
+            {% elif t.status == 'ongoing' %}<span class="badge badge-blue">Ongoing</span>
+            {% else %}<span class="badge badge-gold">Draft</span>{% endif %}
+          </td>
+          <td style="font-weight:600;">{{ t.enrollment_count }}/{{ t.max_participants }}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="progress-bar" style="width:80px;"><div class="progress-fill {% if t.completion_rate == 100 %}green{% endif %}" style="width:{{ t.completion_rate }}%"></div></div>
+              <span style="font-size:12px;font-weight:600;">{{ t.completion_rate }}%</span>
+            </div>
+          </td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'training_detail' pk=t.pk %}" class="btn btn-outline btn-sm" title="View"><i class="fas fa-eye"></i></a>
+              <a href="{% url 'training_edit' pk=t.pk %}" class="btn btn-outline btn-sm" title="Edit"><i class="fas fa-edit"></i></a>
+              <a href="{% url 'enrollment_manage' training_pk=t.pk %}" class="btn btn-outline btn-sm" title="Enrollments"><i class="fas fa-users"></i></a>
+              {% if t.status == 'draft' %}<a href="{% url 'training_publish' pk=t.pk %}" class="btn btn-success btn-sm" title="Publish"><i class="fas fa-globe"></i></a>{% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8"><div class="empty-state"><i class="fas fa-graduation-cap"></i><p>No training programs yet. <a href="{% url 'training_create' %}">Create one →</a></p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

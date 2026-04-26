@@ -1,0 +1,142 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div style="max-width:860px;">
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-file-alt" style="color:var(--dotr-gold-dark);margin-right:8px;"></i>{{ title }}</h3>
+    </div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">
+          Complete the position details below. This job description will serve as the foundation for conducting a job analysis and identifying competency requirements.
+        </p>
+
+        <!-- Position Info -->
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:20px;">
+          <h4 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--dotr-blue);margin-bottom:14px;">
+            <i class="fas fa-id-badge" style="margin-right:6px;"></i> Position Information
+          </h4>
+          <div class="form-grid">
+            <div class="form-group" style="grid-column:1/-1;">
+              <label class="form-label">Position Title *</label>
+              <input type="text" name="position_title" class="form-control" value="{{ jd.position_title|default:'' }}" placeholder="e.g. Administrative Officer II" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Division / Office</label>
+              <select name="division" id="id_division" class="form-control">
+                <option value="">— Select Division —</option>
+                {% for div in divisions %}
+                  <option value="{{ div.pk }}" {% if jd.division_id == div.pk %}selected{% endif %}>{{ div.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Office / Unit</label>
+              <input type="text" name="office_unit" class="form-control" value="{{ jd.office_unit|default:'' }}" placeholder="e.g. Finance and Budget Division">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Salary Grade</label>
+              <input type="number" name="salary_grade" class="form-control" value="{{ jd.salary_grade|default:'' }}" min="1" max="33" placeholder="e.g. 11">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Employment Status</label>
+              <select name="employment_status" class="form-control">
+                <option value="">— Select —</option>
+                <option value="Permanent" {% if jd.employment_status == 'Permanent' %}selected{% endif %}>Permanent</option>
+                <option value="Casual" {% if jd.employment_status == 'Casual' %}selected{% endif %}>Casual</option>
+                <option value="Contractual" {% if jd.employment_status == 'Contractual' %}selected{% endif %}>Contractual</option>
+                <option value="Contract of Service" {% if jd.employment_status == 'Contract of Service' %}selected{% endif %}>Contract of Service</option>
+              </select>
+            </div>
+            <div class="form-group" style="grid-column:1/-1;">
+              <label class="form-label">Immediate Supervisor</label>
+              <input type="text" name="immediate_supervisor" id="id_immediate_supervisor" class="form-control" value="{{ jd.immediate_supervisor|default:'' }}" placeholder="e.g. Division Chief, SG-24">
+              <small id="supervisor-hint" style="font-size:12px;color:var(--text-muted);display:none;">
+                <i class="fas fa-info-circle"></i> Auto-filled from the division head. You may edit this if needed.
+              </small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Duties and Responsibilities -->
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:20px;">
+          <h4 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--dotr-blue);margin-bottom:14px;">
+            <i class="fas fa-tasks" style="margin-right:6px;"></i> Duties and Responsibilities
+          </h4>
+          <div class="form-group">
+            <label class="form-label">Key Duties and Responsibilities *</label>
+            <textarea name="duties_and_responsibilities" class="form-control" rows="6"
+              placeholder="List the major duties and responsibilities of this position. Include percentage of time spent on each task if applicable.&#10;&#10;Example:&#10;1. Prepares and monitors budget allocations (30%)&#10;2. Reviews financial documents for compliance (25%)&#10;..." required>{{ jd.duties_and_responsibilities|default:'' }}</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Performance Standards / Key Result Areas</label>
+            <textarea name="performance_standards" class="form-control" rows="4"
+              placeholder="Describe the expected outputs, performance targets, or success indicators for this role.">{{ jd.performance_standards|default:'' }}</textarea>
+          </div>
+        </div>
+
+        <!-- Qualification Standards -->
+        <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:20px;">
+          <h4 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--dotr-blue);margin-bottom:14px;">
+            <i class="fas fa-graduation-cap" style="margin-right:6px;"></i> Qualification Standards (CSC)
+          </h4>
+          <div class="form-group">
+            <label class="form-label">Education</label>
+            <input type="text" name="education" class="form-control" value="{{ jd.education|default:'' }}"
+              placeholder="e.g. Bachelor's degree relevant to the job">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Training</label>
+            <input type="text" name="training" class="form-control" value="{{ jd.training|default:'' }}"
+              placeholder="e.g. 4 hours of relevant training">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Experience</label>
+            <input type="text" name="experience" class="form-control" value="{{ jd.experience|default:'' }}"
+              placeholder="e.g. 1 year of relevant experience">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Civil Service Eligibility</label>
+            <input type="text" name="eligibility" class="form-control" value="{{ jd.eligibility|default:'' }}"
+              placeholder="e.g. Career Service (Professional) / Second Level Eligibility">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Knowledge, Skills, and Abilities (KSAs)</label>
+            <textarea name="knowledge_skills_abilities" class="form-control" rows="4"
+              placeholder="Describe the specific knowledge, skills, and abilities required to perform the job effectively.&#10;&#10;Example:&#10;- Knowledge of government budgeting processes&#10;- Proficiency in financial reporting&#10;- Ability to work under pressure and meet deadlines">{{ jd.knowledge_skills_abilities|default:'' }}</textarea>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Job Description</button>
+          <a href="{% url 'job_description_list' %}" class="btn btn-outline">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{{ division_heads|json_script:"division-heads-data" }}
+<script>
+(function () {
+  var heads    = JSON.parse(document.getElementById('division-heads-data').textContent);
+  var divSelect = document.getElementById('id_division');
+  var supInput  = document.getElementById('id_immediate_supervisor');
+  var hint      = document.getElementById('supervisor-hint');
+
+  divSelect.addEventListener('change', function () {
+    var headName = heads[divSelect.value] || '';
+    if (headName) {
+      supInput.value = headName;
+      hint.style.display = 'block';
+    } else {
+      hint.style.display = 'none';
+    }
+  });
+}());
+</script>
+{% endblock %}

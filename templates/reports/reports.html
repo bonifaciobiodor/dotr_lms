@@ -1,0 +1,97 @@
+{% extends 'base/base.html' %}
+{% block title %}Reports & Analytics{% endblock %}
+{% block page_title %}Reports & Analytics{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:flex-end;gap:10px;margin-bottom:18px;">
+  <a href="{% url 'compliance_report' %}" class="btn btn-gold"><i class="fas fa-clipboard-check"></i> PRIME-HRM Compliance</a>
+</div>
+
+<!-- Training Completion Table -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-header">
+    <h3><i class="fas fa-graduation-cap" style="color:var(--dotr-blue-light);margin-right:8px;"></i>Training Completion Report</h3>
+    <span class="badge badge-blue">{{ trainings.count }} programs</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Training Program</th><th>Type</th><th>Mode</th><th>Enrolled</th><th>Completed</th><th>Completion Rate</th></tr></thead>
+      <tbody>
+        {% for t in trainings %}
+        <tr>
+          <td>
+            <div style="font-weight:600;font-size:13.5px;">{{ t.title }}</div>
+            <div style="font-size:12px;color:var(--text-muted);">{{ t.code }}</div>
+          </td>
+          <td><span class="badge {% if t.training_type == 'mandatory' %}badge-red{% elif t.training_type == 'specialized' %}badge-purple{% else %}badge-blue{% endif %}">{{ t.get_training_type_display }}</span></td>
+          <td><span class="badge badge-gray">{{ t.get_delivery_mode_display }}</span></td>
+          <td style="font-weight:600;">{{ t.total_enrolled|default:0 }}</td>
+          <td style="font-weight:600;color:var(--success);">{{ t.total_completed|default:0 }}</td>
+          <td>
+            {% with rate=t.total_completed|default:0 %}
+            {% if t.total_enrolled > 0 %}
+            {% widthratio t.total_completed t.total_enrolled 100 as rate_pct %}
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="progress-bar" style="width:90px;"><div class="progress-fill {% if rate_pct|add:0 >= 80 %}green{% elif rate_pct|add:0 >= 50 %}blue{% endif %}" style="width:{{ rate_pct }}%"></div></div>
+              <span style="font-weight:700;font-size:13px;">{{ rate_pct }}%</span>
+            </div>
+            {% else %}<span class="text-muted">—</span>{% endif %}
+            {% endwith %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:30px;">No training programs found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Division Performance -->
+<div class="grid-2">
+  <div class="card">
+    <div class="card-header"><h3><i class="fas fa-sitemap" style="color:var(--dotr-gold-dark);margin-right:8px;"></i>Division Performance</h3></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Division</th><th>Employees</th><th>Completions</th></tr></thead>
+        <tbody>
+          {% for d in divisions %}
+          <tr>
+            <td style="font-weight:600;font-size:13.5px;">{{ d.name }}</td>
+            <td>{{ d.emp_count }}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-weight:700;color:var(--success);">{{ d.completed_count|default:0 }}</span>
+                {% if d.emp_count > 0 %}
+                {% widthratio d.completed_count|default:0 d.emp_count 100 as div_rate %}
+                <div class="progress-bar" style="width:60px;"><div class="progress-fill green" style="width:{{ div_rate }}%"></div></div>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><h3><i class="fas fa-exclamation-triangle" style="color:var(--warning);margin-right:8px;"></i>Top Competency Gaps</h3></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Employee</th><th>Competency</th><th>Gap</th></tr></thead>
+        <tbody>
+          {% for g in gaps|slice:":10" %}
+          <tr>
+            <td style="font-weight:600;font-size:13px;">{{ g.user.get_full_name|truncatechars:20 }}</td>
+            <td style="font-size:13px;">{{ g.competency.name|truncatechars:25 }}</td>
+            <td><span class="badge {% if g.gap >= 2 %}badge-red{% else %}badge-gold{% endif %}">{{ g.target_level }} - {{ g.current_level }}</span></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="3" style="text-align:center;color:var(--text-muted);padding:20px;">No gaps found!</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

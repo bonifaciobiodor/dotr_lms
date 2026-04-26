@@ -1,0 +1,226 @@
+{% extends 'base/base.html' %}
+{% block title %}Job Analysis — {{ analysis.job_description.position_title }}{% endblock %}
+{% block page_title %}Job Analysis{% endblock %}
+{% block content %}
+
+<!-- Status banner -->
+{% if analysis.status == 'applied' %}
+<div style="background:#d1fae5;border:1px solid #6ee7b7;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+  <i class="fas fa-check-circle" style="color:#059669;font-size:16px;"></i>
+  <span style="font-size:13.5px;color:#065f46;">
+    <strong>Applied</strong> — Competency requirements from this analysis have been applied to position
+    "<strong>{{ analysis.job_description.position_title }}</strong>"
+    on {{ analysis.applied_at|date:"M d, Y" }} by {{ analysis.applied_by.get_full_name|default:analysis.applied_by.username }}.
+  </span>
+</div>
+{% elif analysis.status == 'finalized' %}
+<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <i class="fas fa-lock" style="color:#2563eb;font-size:16px;"></i>
+    <span style="font-size:13.5px;color:#1e40af;">
+      <strong>Finalized</strong> — Review the competency profile below then apply it to the position.
+    </span>
+  </div>
+  <form method="post" action="{% url 'job_analysis_apply' pk=analysis.pk %}"
+        onsubmit="return confirm('Apply {{ mappings|length }} competency requirement(s) to position \'{{ analysis.job_description.position_title }}\'? Existing PositionCompetency entries will be updated.');">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-check-double"></i> Apply to Position</button>
+  </form>
+</div>
+{% endif %}
+
+<!-- Header -->
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+  <div>
+    <h2 style="font-size:20px;font-weight:700;">{{ analysis.job_description.position_title }}</h2>
+    <span style="font-size:13px;color:var(--text-muted);">
+      Analysis #{{ analysis.pk }} &bull;
+      {{ analysis.analysis_date|date:"M d, Y"|default:"" }} &bull;
+      Conducted by {{ analysis.analyzed_by.get_full_name|default:analysis.analyzed_by.username|default:"—" }}
+    </span>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a href="{% url 'job_description_detail' pk=analysis.job_description.pk %}" class="btn btn-outline btn-sm">
+      <i class="fas fa-file-alt"></i> View Job Description
+    </a>
+    {% if analysis.status == 'draft' %}
+    <form method="post" action="{% url 'job_analysis_finalize' pk=analysis.pk %}"
+          onsubmit="return confirm('Finalize this job analysis? You will no longer be able to add or remove competencies.');">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-gold btn-sm"><i class="fas fa-lock"></i> Finalize Analysis</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+{% if analysis.summary %}
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header"><h3><i class="fas fa-clipboard" style="color:var(--dotr-gold-dark);margin-right:8px;"></i> Analysis Summary</h3></div>
+  <div class="card-body">
+    <div style="white-space:pre-line;font-size:13.5px;line-height:1.7;">{{ analysis.summary }}</div>
+  </div>
+</div>
+{% endif %}
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
+
+  <!-- Competency Profile Table -->
+  <div class="card">
+    <div class="card-header" style="justify-content:space-between;">
+      <h3><i class="fas fa-brain" style="color:var(--dotr-gold-dark);margin-right:8px;"></i>
+        Competency Requirements
+        <span class="badge badge-blue" style="margin-left:8px;">{{ mappings|length }}</span>
+      </h3>
+    </div>
+
+    {% if mappings %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Competency</th>
+            <th>Category</th>
+            <th>Required Level</th>
+            <th>Justification</th>
+            {% if analysis.status == 'draft' %}<th></th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% regroup mappings by competency.get_category_display as cat_groups %}
+          {% for group in cat_groups %}
+          <tr style="background:#f8fafc;">
+            <td colspan="{% if analysis.status == 'draft' %}5{% else %}4{% endif %}"
+                style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--dotr-blue);padding:8px 16px;">
+              <i class="fas fa-{% if group.grouper == 'Core Competency' %}star{% elif group.grouper == 'Leadership Competency' %}crown{% elif group.grouper == 'Technical Competency' %}cogs{% else %}puzzle-piece{% endif %}" style="margin-right:5px;"></i>
+              {{ group.grouper }}
+            </td>
+          </tr>
+          {% for m in group.list %}
+          <tr>
+            <td style="font-weight:600;font-size:13.5px;">{{ m.competency.name }}</td>
+            <td>
+              <code style="font-size:11px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">{{ m.competency.code }}</code>
+            </td>
+            <td>
+              {% with level=m.required_level %}
+              <span style="display:inline-flex;align-items:center;gap:6px;">
+                <span style="display:inline-block;width:{% if level == 1 %}25{% elif level == 2 %}50{% elif level == 3 %}75{% else %}100{% endif %}%;height:6px;background:{% if level == 1 %}#94a3b8{% elif level == 2 %}#3b82f6{% elif level == 3 %}#f59e0b{% else %}#10b981{% endif %};border-radius:4px;min-width:24px;"></span>
+                <strong>{{ m.get_required_level_display }}</strong>
+              </span>
+              {% endwith %}
+            </td>
+            <td style="font-size:12.5px;color:var(--text-secondary);max-width:220px;">
+              {{ m.justification|default:"—"|truncatechars:80 }}
+            </td>
+            {% if analysis.status == 'draft' %}
+            <td>
+              <form method="post" action="{% url 'job_analysis_remove_competency' pk=analysis.pk mapping_pk=m.pk %}"
+                    onsubmit="return confirm('Remove {{ m.competency.name }} from this analysis?');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);">
+                  <i class="fas fa-times"></i>
+                </button>
+              </form>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="card-body" style="text-align:center;padding:32px;color:var(--text-muted);">
+      <i class="fas fa-brain" style="font-size:32px;margin-bottom:10px;opacity:.4;"></i>
+      <p>No competencies mapped yet. Use the panel on the right to add required competencies.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Add Competency Panel -->
+  {% if analysis.status == 'draft' %}
+  <div class="card">
+    <div class="card-header"><h3><i class="fas fa-plus-circle" style="color:var(--dotr-gold-dark);margin-right:8px;"></i> Add Competency</h3></div>
+    <div class="card-body">
+      <form method="post" action="{% url 'job_analysis_add_competency' pk=analysis.pk %}">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label class="form-label">Filter by Category</label>
+          <select id="cat-filter" class="form-control" style="font-size:13px;">
+            <option value="">— All Categories —</option>
+            {% for val, label in categories %}
+            <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Competency *</label>
+          <select name="competency" id="competency-select" class="form-control" required>
+            <option value="">— Select Competency —</option>
+            {% for comp in available_competencies %}
+            <option value="{{ comp.pk }}" data-category="{{ comp.category }}">
+              [{{ comp.get_category_display }}] {{ comp.name }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Required Proficiency Level *</label>
+          <select name="required_level" class="form-control" required>
+            {% for val, label in proficiency_levels %}
+            <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+          <small style="font-size:11.5px;color:var(--text-muted);">
+            1-Basic &bull; 2-Intermediate &bull; 3-Advanced &bull; 4-Expert
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Justification</label>
+          <textarea name="justification" class="form-control" rows="3"
+            placeholder="Explain why this competency is required based on the duties or qualifications in the job description."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="width:100%;">
+          <i class="fas fa-plus"></i> Add to Analysis
+        </button>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <!-- Summary card when not draft -->
+  <div class="card">
+    <div class="card-header"><h3><i class="fas fa-chart-bar" style="color:var(--dotr-gold-dark);margin-right:8px;"></i> Competency Summary</h3></div>
+    <div class="card-body" style="padding:0;">
+      {% regroup mappings by competency.get_category_display as cat_groups %}
+      {% for group in cat_groups %}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--border);font-size:13.5px;">
+        <span style="font-weight:600;">{{ group.grouper }}</span>
+        <span class="badge badge-blue">{{ group.list|length }}</span>
+      </div>
+      {% endfor %}
+      {% if not mappings %}
+      <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;">No competencies mapped.</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+document.getElementById('cat-filter')?.addEventListener('change', function () {
+  const val = this.value;
+  const select = document.getElementById('competency-select');
+  Array.from(select.options).forEach(function (opt) {
+    if (!opt.value) return; // keep placeholder
+    opt.style.display = (!val || opt.dataset.category === val) ? '' : 'none';
+  });
+  select.value = '';
+});
+</script>
+{% endblock %}

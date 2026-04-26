@@ -1,0 +1,172 @@
+{% extends 'base/base.html' %}
+{% block title %}{% if is_module_quiz %}Quiz Result{% else %}Exam Result{% endif %}{% endblock %}
+{% block page_title %}{% if is_module_quiz %}Module Quiz Result{% else %}Final Exam Result{% endif %}{% endblock %}
+{% block content %}
+<div style="max-width:700px;margin:0 auto;">
+
+  <!-- Result Card -->
+  <div class="card" style="margin-bottom:20px;overflow:visible;">
+    <div style="height:8px;background:{% if attempt.passed %}linear-gradient(90deg,var(--success),#34d399){% else %}linear-gradient(90deg,var(--danger),#f87171){% endif %};"></div>
+    <div class="card-body" style="padding:40px;text-align:center;">
+
+      <!-- Role badge -->
+      <div style="margin-bottom:12px;">
+        {% if is_module_quiz %}
+        <span style="background:#fef3c7;color:#92400e;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;">
+          <i class="fas fa-question-circle"></i> Module Quiz — {{ attempt.assessment.module.title|default:"" }}
+        </span>
+        {% else %}
+        <span style="background:#dbeafe;color:#1e40af;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;">
+          <i class="fas fa-graduation-cap"></i> Final Exam
+        </span>
+        {% endif %}
+      </div>
+
+      <div style="font-size:72px;margin-bottom:12px;">
+        {% if attempt.passed %}🎉{% else %}📝{% endif %}
+      </div>
+
+      <h2 style="font-size:26px;font-weight:800;margin-bottom:8px;color:{% if attempt.passed %}var(--success){% else %}var(--danger){% endif %};">
+        {% if attempt.passed %}
+          {% if is_module_quiz %}Great job! Quiz Passed!{% else %}Congratulations! You Passed!{% endif %}
+        {% else %}
+          {% if is_module_quiz %}Keep it up! Review and retry.{% else %}Not quite there yet. Keep trying!{% endif %}
+        {% endif %}
+      </h2>
+
+      <p style="color:var(--text-muted);margin-bottom:28px;">
+        {{ attempt.assessment.title }} &mdash; {{ attempt.assessment.training.title }}
+      </p>
+
+      <!-- Score boxes -->
+      <div style="display:flex;justify-content:center;gap:20px;flex-wrap:wrap;margin-bottom:28px;">
+        <div style="background:#f8fafc;border-radius:12px;padding:20px 28px;min-width:120px;border:2px solid {% if attempt.passed %}rgba(16,185,129,.3){% else %}rgba(239,68,68,.2){% endif %};">
+          <div style="font-size:36px;font-weight:800;color:{% if attempt.passed %}var(--success){% else %}var(--danger){% endif %};">
+            {{ attempt.score_percent|floatformat:0 }}%
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Your Score</div>
+        </div>
+        <div style="background:#f8fafc;border-radius:12px;padding:20px 28px;min-width:120px;">
+          <div style="font-size:36px;font-weight:800;color:var(--text-primary);">{{ attempt.assessment.passing_score }}%</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Passing Score</div>
+        </div>
+        <div style="background:#f8fafc;border-radius:12px;padding:20px 28px;min-width:120px;">
+          <div style="font-size:36px;font-weight:800;color:var(--dotr-blue-light);">{{ attempt.score }}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Points Earned</div>
+        </div>
+        <div style="background:#f8fafc;border-radius:12px;padding:20px 28px;min-width:120px;">
+          <div style="font-size:36px;font-weight:800;color:var(--text-secondary);">{{ attempt.attempt_number }}</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Attempt No.</div>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+
+        {% if is_module_quiz %}
+          {# ── Module Quiz buttons ── #}
+          <a href="{% url 'learning_view' pk=attempt.assessment.training.pk %}"
+             class="btn btn-primary btn-lg">
+            <i class="fas fa-arrow-right"></i> Continue Learning
+          </a>
+          {% if not attempt.passed and attempts_used < attempt.assessment.max_attempts %}
+          <a href="{% url 'take_assessment' pk=attempt.assessment.pk %}" class="btn btn-outline btn-lg">
+            <i class="fas fa-redo"></i> Retry Quiz ({{ attempts_used }}/{{ attempt.assessment.max_attempts }} used)
+          </a>
+          {% endif %}
+
+        {% else %}
+          {# ── Final Exam buttons ── #}
+          {% if attempt.passed %}
+            {% if attempt.enrollment.certificate %}
+            <a href="{% url 'certificate_detail' pk=attempt.enrollment.certificate.pk %}"
+               class="btn btn-gold btn-lg" style="font-size:15px;padding:12px 28px;">
+              <i class="fas fa-certificate"></i> View & Download Certificate
+            </a>
+            {% endif %}
+            <a href="{% url 'my_learnings' %}" class="btn btn-outline btn-lg">
+              <i class="fas fa-book-open"></i> My Learnings
+            </a>
+          {% else %}
+            {% if attempts_used < attempt.assessment.max_attempts %}
+            <a href="{% url 'take_assessment' pk=attempt.assessment.pk %}" class="btn btn-primary btn-lg">
+              <i class="fas fa-redo"></i> Try Again ({{ attempts_used }}/{{ attempt.assessment.max_attempts }} used)
+            </a>
+            {% else %}
+            <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:14px 20px;font-size:13.5px;color:var(--danger);">
+              <i class="fas fa-times-circle"></i> No more attempts remaining. Please contact HR for assistance.
+            </div>
+            {% endif %}
+            <a href="{% url 'learning_view' pk=attempt.assessment.training.pk %}" class="btn btn-outline btn-lg">
+              <i class="fas fa-book-open"></i> Review Material
+            </a>
+          {% endif %}
+        {% endif %}
+
+      </div>
+
+      <!-- Next-steps hint -->
+      {% if attempt.passed %}
+      <div style="margin-top:24px;background:{% if is_module_quiz %}rgba(217,119,6,.06){% else %}rgba(16,185,129,.06){% endif %};border:1px solid {% if is_module_quiz %}rgba(217,119,6,.2){% else %}rgba(16,185,129,.15){% endif %};border-radius:10px;padding:14px 20px;font-size:13.5px;color:{% if is_module_quiz %}#92400e{% else %}#065f46{% endif %};">
+        {% if is_module_quiz %}
+        <i class="fas fa-check-circle" style="color:#d97706;"></i>
+        <strong>Keep going!</strong> Continue with the next module to progress through the training.
+        {% else %}
+        <i class="fas fa-check-circle" style="color:var(--success);"></i>
+        <strong>What's next?</strong> Download your certificate, share it with your supervisor, and check your updated competency profile.
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <!-- Answer Review -->
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-list-check" style="color:var(--dotr-blue-light);margin-right:8px;"></i>Answer Review</h3>
+      <div style="font-size:13px;color:var(--text-muted);">{{ answers|length }} question{{ answers|length|pluralize }}</div>
+    </div>
+    <div>
+      {% for answer in answers %}
+      <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;gap:14px;align-items:flex-start;">
+        <div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+             background:{% if answer.is_correct %}rgba(16,185,129,.12){% else %}rgba(239,68,68,.1){% endif %};">
+          <i class="fas fa-{% if answer.is_correct %}check{% else %}times{% endif %}"
+             style="color:{% if answer.is_correct %}var(--success){% else %}var(--danger){% endif %};font-size:12px;"></i>
+        </div>
+        <div style="flex:1;">
+          <p style="font-weight:600;font-size:13.5px;margin-bottom:8px;line-height:1.4;">
+            {{ forloop.counter }}. {{ answer.question.question_text }}
+          </p>
+          <div style="font-size:13px;">
+            <span style="color:var(--text-muted);">Your answer: </span>
+            <span style="font-weight:600;color:{% if answer.is_correct %}var(--success){% else %}var(--danger){% endif %};">
+              {{ answer.selected_choice.choice_text|default:answer.text_answer|default:"Not answered" }}
+            </span>
+          </div>
+          {% if not answer.is_correct %}
+          {% for choice in answer.question.choices.all %}{% if choice.is_correct %}
+          <div style="font-size:13px;margin-top:4px;">
+            <span style="color:var(--text-muted);">Correct answer: </span>
+            <span style="font-weight:600;color:var(--success);">{{ choice.choice_text }}</span>
+          </div>
+          {% endif %}{% endfor %}
+          {% endif %}
+          {% if answer.question.explanation %}
+          <div style="margin-top:8px;font-size:12.5px;background:rgba(37,99,235,.05);border-left:3px solid var(--dotr-blue-light);padding:8px 12px;border-radius:0 6px 6px 0;color:var(--text-secondary);line-height:1.6;">
+            <strong>Explanation:</strong> {{ answer.question.explanation }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <div class="empty-state" style="padding:40px;">
+        <i class="fas fa-question-circle"></i><p>No answers recorded.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

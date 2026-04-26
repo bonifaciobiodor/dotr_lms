@@ -1,0 +1,323 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .section-title {
+    font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+    color:var(--text-muted);padding:14px 0 8px;border-bottom:1px solid var(--border);
+    margin-bottom:16px;margin-top:24px;
+  }
+  .section-title:first-of-type { margin-top:0; }
+  .color-field { display:flex;align-items:center;gap:10px; }
+  .color-field input[type=color] { width:44px;height:36px;border-radius:6px;border:1.5px solid var(--border);padding:2px;cursor:pointer; }
+  .color-field input[type=text]  { flex:1; }
+  .preview-panel { position:sticky;top:80px; }
+  .live-preview {
+    background:#f0f4f8;border-radius:10px;overflow:hidden;
+    box-shadow:0 4px 20px rgba(0,0,0,.1);
+    transform:scale(.85);transform-origin:top center;
+    margin-top:-32px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'template_list' %}">Certificate Templates</a>
+  <i class="fas fa-chevron-right" style="font-size:10px;"></i>
+  <span>{{ title }}</span>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:start;">
+
+  <!-- ── Left: Form ── -->
+  <div>
+    <form method="post" enctype="multipart/form-data" id="tmpl-form">
+      {% csrf_token %}
+
+      <!-- IDENTITY -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><h3><i class="fas fa-id-card" style="color:var(--dotr-blue-light);margin-right:8px;"></i>Template Identity</h3></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Template Name *</label>
+            <input type="text" name="name" class="form-control" value="{{ tmpl.name }}" required placeholder="e.g. DOTR Official 2025">
+          </div>
+        </div>
+      </div>
+
+      <!-- BRANDING -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><h3><i class="fas fa-building" style="color:var(--dotr-blue-light);margin-right:8px;"></i>Organization Branding</h3></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Header / Organization Name</label>
+            <input type="text" name="header_text" class="form-control live" id="f-header" value="{{ tmpl.header_text }}" placeholder="Department of Transportation">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sub-header</label>
+            <input type="text" name="subheader" class="form-control live" id="f-subheader" value="{{ tmpl.subheader }}" placeholder="Republic of the Philippines">
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Left Logo</label>
+              <input type="file" name="logo_left" class="form-control" accept="image/*">
+              {% if tmpl.logo_left %}<div style="font-size:12px;color:var(--success);margin-top:4px;"><i class="fas fa-check"></i> Uploaded</div>{% endif %}
+            </div>
+            <div class="form-group">
+              <label class="form-label">Right Logo (optional)</label>
+              <input type="file" name="logo_right" class="form-control" accept="image/*">
+              {% if tmpl.logo_right %}<div style="font-size:12px;color:var(--success);margin-top:4px;"><i class="fas fa-check"></i> Uploaded</div>{% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BODY COPY -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><h3><i class="fas fa-align-left" style="color:var(--dotr-blue-light);margin-right:8px;"></i>Certificate Text</h3></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Intro Line <span style="color:var(--text-muted);font-weight:400;">(before employee name)</span></label>
+            <input type="text" name="intro_line" class="form-control live" id="f-intro" value="{{ tmpl.intro_line }}" placeholder="This is to certify that">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Body Text <span style="color:var(--text-muted);font-weight:400;">(after employee name, before training title)</span></label>
+            <textarea name="body_after" class="form-control live" id="f-body" rows="2" placeholder="has successfully completed the training program">{{ tmpl.body_after }}</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Footer Note</label>
+            <textarea name="footer_note" class="form-control" rows="3" placeholder="e.g. This certificate is issued in recognition of...">{{ tmpl.footer_note }}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- SIGNATORIES -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><h3><i class="fas fa-signature" style="color:var(--dotr-blue-light);margin-right:8px;"></i>Signatories</h3></div>
+        <div class="card-body">
+          <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:12px;">Primary Signatory</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input type="text" name="signatory1_name" class="form-control live" id="f-sig1" value="{{ tmpl.signatory1_name }}" placeholder="e.g. Maria A. Santos">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Position / Title</label>
+              <input type="text" name="signatory1_position" class="form-control" value="{{ tmpl.signatory1_position }}" placeholder="HR Management Officer">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Label</label>
+            <input type="text" name="signatory1_label" class="form-control" value="{{ tmpl.signatory1_label }}" placeholder="Issued by">
+          </div>
+
+          <div style="font-size:13px;font-weight:600;color:var(--text-secondary);margin:16px 0 12px;padding-top:14px;border-top:1px dashed var(--border);">
+            Secondary Signatory <span style="font-weight:400;color:var(--text-muted);">(optional)</span>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input type="text" name="signatory2_name" class="form-control" value="{{ tmpl.signatory2_name }}" placeholder="Optional second signatory">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Position / Title</label>
+              <input type="text" name="signatory2_position" class="form-control" value="{{ tmpl.signatory2_position }}">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DESIGN -->
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-header"><h3><i class="fas fa-palette" style="color:var(--dotr-blue-light);margin-right:8px;"></i>Design & Layout</h3></div>
+        <div class="card-body">
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label class="form-label">Primary Color</label>
+              <div class="color-field">
+                <input type="color" id="cp-primary" value="{{ tmpl.primary_color }}" oninput="syncColor('primary',this.value)">
+                <input type="text" name="primary_color" id="ct-primary" class="form-control" value="{{ tmpl.primary_color }}" oninput="syncColorPicker('primary',this.value)">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Accent Color</label>
+              <div class="color-field">
+                <input type="color" id="cp-accent" value="{{ tmpl.accent_color }}" oninput="syncColor('accent',this.value)">
+                <input type="text" name="accent_color" id="ct-accent" class="form-control" value="{{ tmpl.accent_color }}" oninput="syncColorPicker('accent',this.value)">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Background</label>
+              <div class="color-field">
+                <input type="color" id="cp-bg" value="{{ tmpl.background_color }}" oninput="syncColor('bg',this.value)">
+                <input type="text" name="background_color" id="ct-bg" class="form-control" value="{{ tmpl.background_color }}" oninput="syncColorPicker('bg',this.value)">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Layout Type</label>
+              <select name="layout_type" class="form-control" id="f-layout-type">
+                {% for val, lbl in layout_type_choices %}
+                <option value="{{ val }}" {% if tmpl.layout_type == val %}selected{% endif %}>{{ lbl }}</option>
+                {% endfor %}
+              </select>
+              <small style="color:var(--text-muted);display:block;margin-top:4px;">
+                <strong>Classic:</strong> Traditional centered design. &nbsp;
+                <strong>Modern:</strong> DOTR blue sidebar with competency panel.
+              </small>
+            </div>
+            <div class="form-group" id="competency-level-group" {% if tmpl.layout_type != 'modern' %}style="opacity:.45;pointer-events:none;"{% endif %}>
+              <label class="form-label">Competency Level Label <span style="color:var(--text-muted);font-weight:400;">(Modern layout)</span></label>
+              <input type="text" name="competency_level_label" class="form-control" value="{{ tmpl.competency_level_label }}" placeholder="e.g. Basic Level">
+              <small style="color:var(--text-muted);display:block;margin-top:4px;">Shown in the blue sidebar under Competency Completed.</small>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Border Style <span style="color:var(--text-muted);font-weight:400;">(Classic layout)</span></label>
+              <select name="border_style" class="form-control">
+                {% for val, lbl in border_style_choices %}
+                <option value="{{ val }}" {% if tmpl.border_style == val %}selected{% endif %}>{{ lbl }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Orientation</label>
+              <select name="orientation" class="form-control">
+                <option value="landscape" {% if tmpl.orientation == 'landscape' %}selected{% endif %}>Landscape</option>
+                <option value="portrait"  {% if tmpl.orientation == 'portrait'  %}selected{% endif %}>Portrait</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:6px;">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13.5px;font-weight:600;">
+              <input type="checkbox" name="show_score" {% if tmpl.show_score %}checked{% endif %} style="width:16px;height:16px;accent-color:var(--dotr-blue-light);">
+              Show Final Score
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13.5px;font-weight:600;">
+              <input type="checkbox" name="show_duration" {% if tmpl.show_duration %}checked{% endif %} style="width:16px;height:16px;accent-color:var(--dotr-blue-light);">
+              Show Training Duration
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13.5px;font-weight:600;">
+              <input type="checkbox" name="show_cert_number" {% if tmpl.show_cert_number %}checked{% endif %} style="width:16px;height:16px;accent-color:var(--dotr-blue-light);">
+              Show Certificate Number & QR Code
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:12px;">
+        <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save"></i> Save Template</button>
+        <a href="{% url 'template_list' %}" class="btn btn-outline btn-lg">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- ── Right: Live mini-preview ── -->
+  <div class="preview-panel">
+    <div class="card">
+      <div class="card-header"><h3><i class="fas fa-eye" style="color:var(--dotr-gold-dark);margin-right:8px;"></i>Live Preview</h3></div>
+      <div style="padding:10px;overflow:hidden;">
+        <div class="live-preview" id="live-preview"
+             style="--c-primary:{{ tmpl.primary_color }};--c-accent:{{ tmpl.accent_color }};">
+          <!-- Header -->
+          <div style="background:var(--c-primary);padding:10px 14px;display:flex;align-items:center;gap:8px;">
+            <div style="width:30px;height:30px;border-radius:50%;background:var(--c-accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:var(--c-primary);">🚗</div>
+            <div style="color:white;flex:1;text-align:center;">
+              <div style="font-size:10px;font-weight:800;" id="pv-header">{{ tmpl.header_text }}</div>
+              <div style="font-size:8px;opacity:.7;" id="pv-subheader">{{ tmpl.subheader }}</div>
+            </div>
+          </div>
+          <!-- Body -->
+          <div style="padding:14px;text-align:center;background:white;">
+            <div style="font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--c-primary);font-weight:700;margin-bottom:6px;">Certificate of Completion</div>
+            <div style="font-size:7px;color:#666;margin-bottom:4px;" id="pv-intro">{{ tmpl.intro_line }}</div>
+            <div style="font-size:14px;font-weight:900;color:var(--c-primary);border-bottom:2px solid var(--c-accent);padding-bottom:4px;display:inline-block;margin-bottom:4px;">Juan dela Cruz</div>
+            <div style="font-size:7px;color:#666;margin-bottom:4px;" id="pv-body">{{ tmpl.body_after }}</div>
+            <div style="font-size:10px;font-weight:800;color:#1a1a1a;margin:6px 0;">Digital Literacy for Government Employees</div>
+            <div style="display:flex;justify-content:center;gap:12px;margin:8px 0;padding:6px;background:#f8f9fa;border-radius:4px;">
+              <div style="text-align:center;"><div style="font-size:9px;font-weight:800;color:var(--c-primary);">Apr 2, 2025</div><div style="font-size:7px;color:#888;">Issued</div></div>
+              <div style="text-align:center;"><div style="font-size:9px;font-weight:800;color:var(--c-primary);">8h</div><div style="font-size:7px;color:#888;">Duration</div></div>
+              <div style="text-align:center;"><div style="font-size:9px;font-weight:800;color:var(--c-accent);">88%</div><div style="font-size:7px;color:#888;">Score</div></div>
+            </div>
+            <!-- Mini sig line -->
+            <div style="display:flex;justify-content:center;gap:20px;padding-top:8px;border-top:1px dashed #eee;margin-top:6px;">
+              <div style="text-align:center;">
+                <div style="width:70px;border-bottom:1px solid #333;margin:0 auto;height:16px;display:flex;align-items:flex-end;justify-content:center;font-style:italic;font-size:7px;color:var(--c-primary);" id="pv-sig1">{{ tmpl.signatory1_name|default:"_________" }}</div>
+                <div style="font-size:6px;color:#777;margin-top:2px;">{{ tmpl.signatory1_position }}</div>
+              </div>
+            </div>
+          </div>
+          <!-- Bottom -->
+          <div style="background:#fafafa;padding:6px 10px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #eee;">
+            <div style="font-size:6px;color:#999;"><div style="font-weight:700;color:var(--c-primary);">DOTR-XXXXXXXX</div><div>Scan to verify</div></div>
+            <div style="width:30px;height:30px;background:white;border:1px solid var(--c-primary);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:14px;">⬛</div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:10px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--text-muted);">
+        <i class="fas fa-info-circle"></i> Preview updates as you type.
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Live preview updaters ──
+function liveUpdate(fieldId, previewId) {
+  const f = document.getElementById(fieldId);
+  const p = document.getElementById(previewId);
+  if (f && p) f.addEventListener('input', () => { p.textContent = f.value; });
+}
+liveUpdate('f-header',    'pv-header');
+liveUpdate('f-subheader', 'pv-subheader');
+liveUpdate('f-intro',     'pv-intro');
+liveUpdate('f-body',      'pv-body');
+liveUpdate('f-sig1',      'pv-sig1');
+
+// ── Color sync ──
+function syncColor(name, value) {
+  document.getElementById('ct-' + name).value = value;
+  applyColors();
+}
+function syncColorPicker(name, value) {
+  if (/^#[0-9a-fA-F]{6}$/.test(value)) {
+    document.getElementById('cp-' + name).value = value;
+    applyColors();
+  }
+}
+function applyColors() {
+  const p = document.getElementById('ct-primary').value;
+  const a = document.getElementById('ct-accent').value;
+  const preview = document.getElementById('live-preview');
+  if (preview) {
+    preview.style.setProperty('--c-primary', p);
+    preview.style.setProperty('--c-accent',  a);
+  }
+}
+
+// ── Layout type toggle ──
+(function () {
+  const sel = document.getElementById('f-layout-type');
+  const lvlGroup = document.getElementById('competency-level-group');
+  if (!sel || !lvlGroup) return;
+  function toggle() {
+    const isModern = sel.value === 'modern';
+    lvlGroup.style.opacity = isModern ? '1' : '.45';
+    lvlGroup.style.pointerEvents = isModern ? '' : 'none';
+  }
+  sel.addEventListener('change', toggle);
+  toggle();
+})();
+</script>
+{% endblock %}

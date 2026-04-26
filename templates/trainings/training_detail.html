@@ -1,0 +1,162 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ training.title }}{% endblock %}
+{% block page_title %}Training Details{% endblock %}
+{% block content %}
+<div class="breadcrumb"><a href="{% url 'training_catalog' %}">Catalog</a><i class="fas fa-chevron-right" style="font-size:10px;"></i><span>{{ training.title|truncatechars:50 }}</span></div>
+
+<div class="grid-2" style="align-items:start;">
+  <!-- Left: Info -->
+  <div>
+    <div class="card" style="margin-bottom:18px;">
+      <div style="height:8px;background:{% if training.training_type == 'mandatory' %}linear-gradient(90deg,#ef4444,#f87171){% elif training.training_type == 'specialized' %}linear-gradient(90deg,#8b5cf6,#a78bfa){% else %}linear-gradient(90deg,var(--dotr-blue-light),#60a5fa){% endif %};"></div>
+      <div class="card-body">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+          <span class="badge {% if training.training_type == 'mandatory' %}badge-red{% elif training.training_type == 'specialized' %}badge-purple{% else %}badge-blue{% endif %}">{{ training.get_training_type_display }}</span>
+          <span class="badge badge-gray">{{ training.get_delivery_mode_display }}</span>
+          <span class="badge {% if training.status == 'published' %}badge-green{% elif training.status == 'completed' %}badge-gray{% else %}badge-gold{% endif %}">{{ training.get_status_display }}</span>
+        </div>
+        <h1 style="font-size:22px;font-weight:800;line-height:1.3;margin-bottom:12px;">{{ training.title }}</h1>
+        <p style="font-size:14px;color:var(--text-secondary);line-height:1.7;">{{ training.description }}</p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px;">
+          {% for icon,label,val in details %}
+          <div style="background:#f8fafc;border-radius:8px;padding:12px;">
+            <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;"><i class="fas fa-{{ icon }}"></i> {{ label }}</div>
+            <div style="font-size:13.5px;font-weight:600;color:var(--text-primary);">{{ val }}</div>
+          </div>
+          {% endfor %}
+          <div style="background:#f8fafc;border-radius:8px;padding:12px;">
+            <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;"><i class="fas fa-clock"></i> Duration</div>
+            <div style="font-size:13.5px;font-weight:600;">{{ training.duration_hours }} hours</div>
+          </div>
+          <div style="background:#f8fafc;border-radius:8px;padding:12px;">
+            <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;"><i class="fas fa-check-circle"></i> Passing Score</div>
+            <div style="font-size:13.5px;font-weight:600;">{{ training.passing_score }}%</div>
+          </div>
+          <div style="background:#f8fafc;border-radius:8px;padding:12px;">
+            <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;"><i class="fas fa-users"></i> Slots</div>
+            <div style="font-size:13.5px;font-weight:600;">{{ training.enrollment_count }}/{{ training.max_participants }}</div>
+          </div>
+          {% if training.start_date %}
+          <div style="background:#f8fafc;border-radius:8px;padding:12px;">
+            <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;"><i class="fas fa-calendar"></i> Schedule</div>
+            <div style="font-size:13.5px;font-weight:600;">{{ training.start_date|date:"M d" }} – {{ training.end_date|date:"M d, Y"|default:"TBD" }}</div>
+          </div>
+          {% endif %}
+          {% if training.venue %}
+          <div style="background:#f8fafc;border-radius:8px;padding:12px;">
+            <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;"><i class="fas fa-map-marker-alt"></i> Venue</div>
+            <div style="font-size:13.5px;font-weight:600;">{{ training.venue }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Modules -->
+    <div class="card">
+      <div class="card-header"><h3><i class="fas fa-list-ol" style="color:var(--dotr-blue-light);margin-right:8px;"></i>Course Modules</h3>
+        <span class="badge badge-blue">{{ modules.count }} modules</span>
+      </div>
+      <div>
+        {% for module in modules %}
+        <div style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--border);">
+          <div style="width:32px;height:32px;border-radius:50%;background:var(--dotr-blue-light);color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">{{ module.order }}</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:13.5px;">{{ module.title }}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">
+              <i class="fas fa-{% if module.content_type == 'video' %}video{% elif module.content_type == 'pdf' %}file-pdf{% elif module.content_type == 'quiz' %}question-circle{% else %}file-alt{% endif %}"></i>
+              {{ module.get_content_type_display }} &bull; {{ module.duration_minutes }} min
+            </div>
+          </div>
+          {% if module.is_required %}<span class="badge badge-red" style="font-size:10px;">Required</span>{% endif %}
+        </div>
+        {% empty %}
+        <div class="empty-state"><i class="fas fa-list"></i><p>No modules added yet.</p></div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Actions -->
+  <div>
+    <div class="card" style="margin-bottom:18px;">
+      <div class="card-body">
+        {% if enrollment %}
+          {% if enrollment.status == 'completed' %}
+          <div style="text-align:center;padding:10px 0;">
+            <div style="font-size:36px;margin-bottom:8px;">🎓</div>
+            <div style="font-weight:700;color:var(--success);font-size:16px;">Completed!</div>
+            <div style="font-size:13px;color:var(--text-muted);margin:6px 0 16px;">Score: {{ enrollment.final_score }}%</div>
+            <a href="{% url 'learning_view' pk=training.pk %}" class="btn btn-outline" style="width:100%;justify-content:center;">Review Material</a>
+            {% if enrollment.certificate %}<a href="{% url 'certificate_detail' pk=enrollment.certificate.pk %}" class="btn btn-gold" style="width:100%;justify-content:center;margin-top:8px;"><i class="fas fa-certificate"></i> View Certificate</a>{% endif %}
+          </div>
+          {% else %}
+          <div style="margin-bottom:16px;">
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;font-weight:600;">YOUR PROGRESS</div>
+            <div class="progress-bar" style="height:10px;margin-bottom:6px;"><div class="progress-fill" style="width:{{ enrollment.progress_percent }}%"></div></div>
+            <div style="font-size:13px;color:var(--text-secondary);">{{ enrollment.progress_percent }}% complete</div>
+          </div>
+          {% if training.start_date and training.start_date > today %}
+          <button class="btn btn-primary" style="width:100%;justify-content:center;opacity:0.6;cursor:not-allowed;" disabled>
+            <i class="fas fa-clock"></i> Start Learning
+          </button>
+          <div style="text-align:center;margin-top:14px;">
+            <div style="font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Training starts in</div>
+            <div id="detail-countdown" style="font-size:22px;font-weight:800;color:var(--dotr-blue-light);letter-spacing:1px;">--d --h --m --s</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;"><i class="fas fa-calendar"></i> {{ training.start_date|date:"F d, Y" }}</div>
+          </div>
+          <script>
+          (function(){
+            var t=new Date("{{ training.start_date|date:'Y-m-d' }}T00:00:00"),el=document.getElementById('detail-countdown');
+            function tick(){
+              var diff=t-new Date();
+              if(diff<=0){location.reload();return;}
+              var d=Math.floor(diff/86400000),h=Math.floor(diff%86400000/3600000),m=Math.floor(diff%3600000/60000),s=Math.floor(diff%60000/1000);
+              el.textContent=d+'d '+String(h).padStart(2,'0')+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s';
+            }
+            tick();setInterval(tick,1000);
+          })();
+          </script>
+          {% elif training.end_date and training.end_date < today %}
+          <button class="btn btn-primary" style="width:100%;justify-content:center;opacity:0.6;cursor:not-allowed;" disabled>
+            <i class="fas fa-play"></i> Start Learning
+          </button>
+          <div style="margin-top:12px;padding:10px 14px;background:#fee2e2;border-radius:8px;text-align:center;">
+            <i class="fas fa-times-circle" style="color:#ef4444;"></i>
+            <span style="color:#b91c1c;font-weight:600;font-size:13px;margin-left:6px;">Sorry, this Training Program is Closed.</span>
+          </div>
+          {% else %}
+          <a href="{% url 'learning_view' pk=training.pk %}" class="btn btn-primary" style="width:100%;justify-content:center;"><i class="fas fa-play"></i> Continue Learning</a>
+          {% endif %}
+          {% endif %}
+        {% else %}
+          <div style="text-align:center;margin-bottom:18px;">
+            <div style="font-size:36px;margin-bottom:8px;">📚</div>
+            <div style="font-weight:700;font-size:15px;">Ready to learn?</div>
+            <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">Join {{ training.enrollment_count }} enrolled learners</div>
+          </div>
+          <a href="{% url 'enroll_direct' pk=training.pk %}" class="btn btn-primary btn-lg" style="width:100%;justify-content:center;margin-bottom:10px;"><i class="fas fa-user-plus"></i> Enroll Now</a>
+          <a href="{% url 'training_request_create' training_pk=training.pk %}" class="btn btn-outline" style="width:100%;justify-content:center;"><i class="fas fa-paper-plane"></i> Submit Request</a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if user.role in 'admin,hr,trainer' %}
+    <div class="card">
+      <div class="card-header"><h3>Management</h3></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
+        <a href="{% url 'training_edit' pk=training.pk %}" class="btn btn-outline" style="justify-content:center;"><i class="fas fa-edit"></i> Edit Training</a>
+        <a href="{% url 'training_modules' pk=training.pk %}" class="btn btn-outline" style="justify-content:center;"><i class="fas fa-list"></i> Manage Modules</a>
+        <a href="{% url 'enrollment_manage' training_pk=training.pk %}" class="btn btn-outline" style="justify-content:center;"><i class="fas fa-users"></i> Manage Enrollments</a>
+        <a href="{% url 'attendance_manage' training_pk=training.pk %}" class="btn btn-outline" style="justify-content:center;"><i class="fas fa-calendar-check"></i> Attendance</a>
+        <a href="{% url 'assessment_list' training_pk=training.pk %}" class="btn btn-outline" style="justify-content:center;"><i class="fas fa-question-circle"></i> Assessments</a>
+        {% if training.status == 'draft' %}
+        <a href="{% url 'training_publish' pk=training.pk %}" class="btn btn-success" style="justify-content:center;"><i class="fas fa-globe"></i> Publish</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

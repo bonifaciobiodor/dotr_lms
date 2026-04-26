@@ -1,0 +1,27 @@
+{% extends 'base/base.html' %}
+{% block title %}Create IDP{% endblock %}
+{% block page_title %}Create Individual Development Plan{% endblock %}
+{% block content %}
+<div style="max-width:560px;">
+  <div class="card">
+    <div class="card-header"><h3>New Individual Development Plan</h3></div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Year *</label>
+          <input type="number" name="year" class="form-control" value="{{ year }}" min="2020" max="2030" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Career Objective</label>
+          <textarea name="career_objective" class="form-control" rows="4" placeholder="Describe your career goal and growth objectives for this year..."></textarea>
+        </div>
+        <div style="display:flex;gap:12px;">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Create IDP</button>
+          <a href="{% url 'idp_list' %}" class="btn btn-outline">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

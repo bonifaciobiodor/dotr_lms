@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Analysis Form — {{ entry.full_name }}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 13px; color: #111; background: #fff; }
+  .page { max-width: 900px; margin: 0 auto; padding: 24px 20px 40px; }
+
+  /* Header */
+  .dotr-header { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-bottom: 2px solid #cbd5e1; }
+  .dotr-header .org-name { font-weight: 800; font-size: 14px; letter-spacing: .4px; }
+  .dotr-header .republic { font-size: 11px; color: #555; }
+  .form-title {
+    background: #1e3a8a; color: #fff; text-align: center;
+    padding: 12px; font-size: 17px; font-weight: 800; letter-spacing: .5px;
+  }
+
+  /* Meta bar */
+  .meta-bar {
+    background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px;
+    padding: 9px 14px; margin: 14px 0 10px; display: flex; gap: 24px;
+    flex-wrap: wrap; font-size: 11.5px; color: #475569;
+  }
+  .meta-bar strong { color: #1e293b; }
+
+  /* Section header */
+  .section-header {
+    background: #1e3a8a; color: #fff; text-align: center;
+    padding: 8px 14px; font-weight: 700; font-size: 13px; letter-spacing: .3px;
+  }
+  .section-sub {
+    text-align: center; font-style: italic; font-size: 11.5px;
+    color: #64748b; padding: 4px 14px 8px; border-bottom: 1px solid #e2e8f0;
+  }
+
+  /* Field rows */
+  .field-row { display: grid; grid-template-columns: 200px 1fr; border-bottom: 1px solid #e2e8f0; }
+  .field-label { font-weight: 700; font-size: 12.5px; padding: 9px 13px; border-right: 1px solid #e2e8f0; background: #f8fafc; }
+  .field-value { padding: 9px 13px; font-size: 13px; }
+
+  /* Content blocks */
+  .content-block { padding: 13px 15px; border-bottom: 2px solid #e2e8f0; font-size: 13px; white-space: pre-line; line-height: 1.7; min-height: 50px; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #cbd5e1; padding: 7px 9px; font-size: 12.5px; }
+  th { background: #f1f5f9; font-weight: 700; text-align: center; font-size: 11.5px; }
+  td.center { text-align: center; }
+  .check { color: #1e3a8a; font-size: 15px; }
+
+  /* Category badges */
+  .badge-core       { background: #dbeafe; color: #1e40af; }
+  .badge-leadership { background: #ede9fe; color: #5b21b6; }
+  .badge-technical  { background: #d1fae5; color: #065f46; }
+  .badge-functional { background: #fef3c7; color: #92400e; }
+  .cat-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 10.5px; font-weight: 700;
+  }
+  .check-circle {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; background: #1e3a8a; border-radius: 50%;
+    color: #fff; font-size: 13px; font-weight: 700;
+  }
+
+  /* Certification */
+  .cert-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 20px; }
+  .cert-line { border-bottom: 1px solid #000; height: 26px; }
+  .cert-sub  { font-size: 11px; margin-top: 3px; color: #555; }
+
+  /* Footer */
+  .stored-footer {
+    margin-top: 28px; padding: 10px 14px; background: #f8fafc;
+    border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px; color: #64748b;
+  }
+  .stored-footer strong { color: #1e293b; }
+
+  /* Print */
+  @media print {
+    .page { padding: 0; max-width: 100%; }
+    .stored-footer { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page" style="border: 1px solid #696868">
+
+  <!-- DOTr header -->
+  <div class="dotr-header">
+      <div style="display:flex;gap:10px;align-items:center;">
+        {% if dotr_logo_b64 %}<img src="data:image/png;base64,{{ dotr_logo_b64 }}" alt="DOTr" style="height:52px;object-fit:contain;">{% endif %}
+        {% if bp_logo_b64 %}<img src="data:image/png;base64,{{ bp_logo_b64 }}" alt="" style="height:72px;object-fit:contain;">{% endif %}
+      </div>
+    <div>
+      <div class="republic">Republic of the Philippines</div>
+      <div class="org-name">DEPARTMENT OF TRANSPORTATION</div>
+    </div>
+  </div>
+  <div class="form-title">JOB ANALYSIS FORM</div>
+      <div style="padding:0px 16px;border-bottom:2px solid #e2e8f0; font-size:14px;white-space:pre-line;min-height:80px;line-height:1.7;">
+        <p style="font-weight: bold; margin-top: -15px; margin-bottom: -10px;">Introduction</p>
+        <p style="text-align: justify;">This form is intended to gather comprehensive information on the job roles, responsibilities, and required competencies of employees within a specific office, service, or division. The data collected will primarily support competency framework validation and also serve as a reference for other human resource functions such as workforce planning, training needs analysis, and performance management.</p>
+        <p style="font-weight: bold; margin-top: -10px; margin-bottom: -25px;">Objectives</p>
+        <ul style="margin-top: -10px; margin-bottom: -25px; margin-left: 25px;">
+          <li style="margin-top: -10px; margin-bottom: -10px;">Document the main and secondary responsibilities of each position.</li>
+          <li style="margin-top: -10px; margin-bottom: -10px;">Identify skills and proficiency levels required for effective performance.</li>
+          <li style="margin-top: -10px; margin-bottom: -10px;">Provide a basis for competency gap analysis and targeted development programs.</li>
+          <li style="margin-top: -10px; margin-bottom: -10px;">Ensure alignment between job roles and organizational objectives.</li>
+      </ul>
+      </div>
+  <!-- Stored-file metadata -->
+  {% comment %} <div class="meta-bar">
+    <span><strong>Stored by:</strong> {{ stored_by.get_full_name }}</span>
+    <span><strong>Date stored:</strong> {% now "F d, Y" %}</span>
+    <span><strong>Status at storage:</strong> {{ entry.get_status_display }}</span>
+    {% if entry.employee.division %}
+    <span><strong>Division:</strong> {{ entry.employee.division.name }}</span>
+    {% endif %}
+  </div> {% endcomment %}
+
+  <!-- Header fields -->
+  <div style="border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; margin-bottom: 14px;">
+    <div class="field-row"><div class="field-label">Full Name</div><div class="field-value">{{ entry.full_name }}</div></div>
+    <div class="field-row"><div class="field-label">Position Title</div><div class="field-value">{{ entry.position_title }}</div></div>
+    <div class="field-row"><div class="field-label">Office / Service / Division</div><div class="field-value">{{ entry.office_service_division|default:"—" }}</div></div>
+    <div class="field-row"><div class="field-label">Section / Project / Unit</div><div class="field-value">{{ entry.section_project_unit|default:"—" }}</div></div>
+    <div class="field-row" style="border-bottom:none;"><div class="field-label">Alternate Position</div><div class="field-value">{{ entry.alternate_position|default:"—" }}</div></div>
+  </div>
+
+  <!-- Job Purpose -->
+  <div class="section-header">JOB PURPOSE</div>
+  <div class="section-sub">Brief Description of the general function and purpose of the position.</div>
+  <div class="content-block">{{ entry.job_purpose|default:"—" }}</div>
+
+  <!-- Main Duties -->
+  <div class="section-header">MAIN DUTIES AND RESPONSIBILITIES</div>
+     <div style="padding:0px 16px;border-bottom:2px solid #e2e8f0; font-size:14px;white-space:pre-line;min-height:80px;line-height:1.7;">
+    <p style="margin-top: -15px; margin-bottom: -25px; text-align: justify;">This section provides a detailed outline of the primary tasks, functions, and obligations associated with the position. It defines the key activities that the employee is expected to perform to achieve the objectives of the role. These responsibilities should be specific, measurable, and aligned with the overall goals of the organization.</p>
+    </div>
+  <div class="content-block">{{ entry.main_duties|default:"—" }}</div>
+
+  <!-- Secondary Duties -->
+  <div class="section-header">SECONDARY DUTIES &amp; RESPONSIBILITIES</div>
+         <div style="padding:0px 16px;border-bottom:2px solid #e2e8f0; font-size:14px;white-space:pre-line;min-height:80px;line-height:1.7;">
+    <p style="margin-top: -15px; margin-bottom: -25px; text-align: justify;">This section lists additional duties that support the main responsibilities of the position. These tasks are not the primary focus of the role but are necessary to ensure smooth operations and assist in achieving departmental or organizational objectives. They may include occasional assignments, administrative support, or other related activities as required.
+</p>
+    </div>
+  <div style="padding: 12px; border-bottom: 2px solid #e2e8f0;">
+    {% if secondary_duties %}
+    <table>
+      <thead>
+        <tr>
+          <th style="width:5%;">NO.</th>
+          <th style="width:51%;">TASKS</th>
+          <th class="center" style="width:9%;">Daily</th>
+          <th class="center" style="width:9%;">Weekly</th>
+          <th class="center" style="width:9%;">Monthly</th>
+          <th class="center" style="width:9%;">Quarterly</th>
+          <th class="center" style="width:12%;">Periodically / As Instructed</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in secondary_duties %}
+        <tr>
+          <td class="center" style="color:#94a3b8;">{{ forloop.counter }}</td>
+          <td>{{ d.task }}</td>
+          <td class="center">{% if d.frequency == 'daily' %}<span class="check">&#10003;</span>{% endif %}</td>
+          <td class="center">{% if d.frequency == 'weekly' %}<span class="check">&#10003;</span>{% endif %}</td>
+          <td class="center">{% if d.frequency == 'monthly' %}<span class="check">&#10003;</span>{% endif %}</td>
+          <td class="center">{% if d.frequency == 'quarterly' %}<span class="check">&#10003;</span>{% endif %}</td>
+          <td class="center">{% if d.frequency == 'periodically' %}<span class="check">&#10003;</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="font-size:12.5px;color:#94a3b8;text-align:center;padding:10px;">No secondary duties recorded.</p>
+    {% endif %}
+  </div>
+
+  <!-- Required Competencies -->
+  <div class="section-header">REQUIRED COMPETENCIES</div>
+         <div style="padding:0px 16px;border-bottom:2px solid #e2e8f0; font-size:14px;white-space:pre-line;min-height:80px;line-height:1.7;">
+    <p style="margin-top: -15px; margin-bottom: -25px; text-align: justify;">This outlines the fundamental abilities, knowledge, and competencies required to perform the duties of the position effectively. These skills are critical for achieving job objectives and ensuring successful performance. Typically, it includes technical, behavioral, and leadership/managerial skills (if applicable) necessary for the role.
+</p>
+    </div>
+  <div style="padding:6px 14px 8px;font-size:11.5px;color:#64748b;border-bottom:1px solid #e2e8f0;font-style:italic;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+    <span>Note: Filled by the immediate supervisor / division chief</span>
+    {% if entry.reviewed_by %}
+    <span style="font-style:normal;">Filled by <strong>{{ entry.reviewed_by.get_full_name }}</strong>{% if entry.reviewed_date %} on {{ entry.reviewed_date|date:"M d, Y" }}{% endif %}</span>
+    {% endif %}
+  </div>
+  <div style="padding: 12px; border-bottom: 2px solid #e2e8f0;">
+    {% if required_skills %}
+    <table>
+      <thead>
+        <tr>
+          <th style="width:4%;">NO.</th>
+          <th style="width:22%;">CATEGORY</th>
+          <th style="width:34%;">COMPETENCY</th>
+          <th class="center" style="width:10%;">BASIC</th>
+          <th class="center" style="width:10%;">INTERMEDIATE</th>
+          <th class="center" style="width:10%;">ADVANCED</th>
+          <th class="center" style="width:10%;">SUPERIOR</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in required_skills %}
+        <tr>
+          <td class="center" style="color:#94a3b8;">{{ forloop.counter }}</td>
+          <td>
+            {% if s.competency %}
+              {% with cat=s.competency.category %}
+              <span class="cat-badge
+                {% if cat == 'core' %}badge-core
+                {% elif cat == 'leadership' %}badge-leadership
+                {% elif cat == 'technical' %}badge-technical
+                {% else %}badge-functional{% endif %}">
+                {{ s.competency.get_category_display }}
+              </span>
+              {% endwith %}
+            {% else %}
+              <span style="color:#94a3b8;">—</span>
+            {% endif %}
+          </td>
+          <td style="font-weight:600;">
+            {{ s.competency.name|default:s.skill_name }}
+            {% if s.competency.description %}
+            <div style="font-weight:400;font-size:11px;color:#64748b;margin-top:2px;">{{ s.competency.description|truncatechars:70 }}</div>
+            {% endif %}
+          </td>
+          <td class="center">{% if s.proficiency_level == 'basic' %}<span class="check-circle">&#10003;</span>{% endif %}</td>
+          <td class="center">{% if s.proficiency_level == 'intermediate' %}<span class="check-circle">&#10003;</span>{% endif %}</td>
+          <td class="center">{% if s.proficiency_level == 'advanced' %}<span class="check-circle">&#10003;</span>{% endif %}</td>
+          <td class="center">{% if s.proficiency_level == 'superior' %}<span class="check-circle">&#10003;</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="font-size:12.5px;color:#94a3b8;text-align:center;padding:10px;">No competencies recorded.</p>
+    {% endif %}
+  </div>
+
+  <!-- Tools and Equipment -->
+  <div class="section-header">TOOLS AND EQUIPMENT</div>
+  <div class="section-sub">List any tools, equipment, or software regularly used.</div>
+  <div style="padding:12px;border-bottom:2px solid #e2e8f0;">
+    {% if tools %}
+    <ol style="padding-left:20px;font-size:13px;line-height:2;">
+      {% for t in tools %}<li>{{ t.name }}</li>{% endfor %}
+    </ol>
+    {% else %}
+    <p style="font-size:12.5px;color:#94a3b8;text-align:center;padding:10px;">No tools recorded.</p>
+    {% endif %}
+  </div>
+
+  <!-- Challenges -->
+  <div class="section-header">CHALLENGES AND CRITICAL ISSUES</div>
+  <div class="content-block">{{ entry.challenges_critical_issues|default:"—" }}</div>
+
+  <!-- Additional Comments -->
+  <div class="section-header">ADDITIONAL COMMENTS</div>
+  <div class="content-block" style="border-bottom:1px solid #e2e8f0;">{{ entry.additional_comments|default:"—" }}</div>
+
+  <!-- Certification -->
+  <div style="padding: 16px; font-size: 13px; line-height: 1.9; border-bottom: 2px solid #e2e8f0;">
+    <p>I hereby certify that all information and statements provided herewith are accurate. I further attest that these details truthfully reflect my current knowledge and understanding.</p>
+    <div class="cert-grid">
+      <div>
+        <div class="cert-line">
+          {% if entry.certified_date %}<span style="font-style:italic;font-size:12px;color:#555;">{{ entry.full_name }}</span>{% endif %}
+        </div>
+        <div class="cert-sub">Signature over Printed Name</div>
+      </div>
+      <div>
+        <div class="cert-line">
+          {% if entry.certified_date %}<span style="font-size:12px;">{{ entry.certified_date|date:"F d, Y" }}</span>{% endif %}
+        </div>
+        <div class="cert-sub">Date</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Approval block -->
+  {% if entry.approved_by %}
+  <div style="padding:14px 16px;border-bottom:2px solid #e2e8f0;">
+    <div style="font-weight:700;font-size:12px;margin-bottom:10px;color:#1e3a8a;">HRDD APPROVAL</div>
+    <div class="cert-grid">
+      <div>
+        <div class="cert-line"><span style="font-style:italic;font-size:12px;color:#555;">{{ entry.approved_by.get_full_name }}</span></div>
+        <div class="cert-sub">Approved by (HRDD)</div>
+      </div>
+      <div>
+        <div class="cert-line">{% if entry.approved_date %}<span style="font-size:12px;">{{ entry.approved_date|date:"F d, Y" }}</span>{% endif %}</div>
+        <div class="cert-sub">Date Approved</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Stored-file footer -->
+  <div class="stored-footer">
+    This file was electronically stored by <strong>{{ stored_by.get_full_name }}</strong>
+    on <strong>{% now "F d, Y \a\t g:i A" %}</strong>
+    via the DOTr Learning Management System.
+    {% if entry.employee.division %}
+    Division: <strong>{{ entry.employee.division.name }}</strong>.
+    {% endif %}
+    This is an official record — do not alter the file after storage.
+  </div>
+
+</div>
+</body>
+</html>

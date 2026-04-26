@@ -1,0 +1,738 @@
+<!-- 
+#=========================================================#
+| DEPARTMENT OF TRANSPORTATIO (DOTr) LMS                  |
+| Computer and Network Systems Division                   |
+| - Developed by BPBJr                                    |
+| - BBONIFACIOJR                                          |
+| - https://lms.dotr.gov.ph                               |
+| - Version 1.0.0                                         |
+#=========================================================#
+-->
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <meta name="csrf-token" content="{{ csrf_token }}" />
+    <link rel="icon" href="{% static 'img/DOTr.png' %}" />
+  <title>{% block title %}DOTR-LMS{% endblock %} | Department of Transportation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <style>
+    :root {
+      --dotr-blue: #003087;
+      --dotr-blue-mid: #0047BD;
+      --dotr-blue-light: #2563eb;
+      --dotr-gold: #FDB913;
+      --dotr-gold-dark: #d4a017;
+      --bg-main: #f0f4f8;
+      --bg-card: #ffffff;
+      --bg-sidebar: #001a52;
+      --sidebar-w: 260px;
+      --sidebar-w-collapsed: 0px;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --border: #e2e8f0;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --radius: 12px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg-main);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+    }
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--bg-sidebar);
+      height: 100vh;
+      position: fixed;
+      left: 0; top: 0;
+      display: flex; flex-direction: column;
+      z-index: 100;
+      transition: width .25s cubic-bezier(.4,0,.2,1);
+      overflow-x: hidden;
+      overflow-y: hidden;
+      /* Desktop: always visible, no transform */
+      transform: translateX(0);
+    }
+    /* Collapsed state — desktop only */
+    body.sidebar-collapsed .sidebar { width: var(--sidebar-w-collapsed); }
+    body.sidebar-collapsed .main-wrap { margin-left: var(--sidebar-w-collapsed); }
+
+    /* Text/label elements that hide when collapsed */
+    .brand-text { color: white; }
+    .brand-name { font-size: 20px; font-weight: 900; line-height: 1.2; letter-spacing: 1.5px; }
+    .brand-sub { font-size: 10px; color: rgba(255,255,255,.5); letter-spacing: .0px; text-transform: uppercase; }
+
+    .sidebar-brand { padding: 16px 14px; border-bottom: 1px solid rgba(255,255,255,.08); min-height: 64px; display:flex; align-items:center; }
+    .brand-logo { display: flex; align-items: center; gap: 10px; overflow:hidden; white-space:nowrap; }
+    .brand-text { transition: opacity .2s, width .2s; opacity:1; overflow:hidden; }
+    body.sidebar-collapsed .brand-text { opacity:0; width:0; }
+
+    .sidebar-user { padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,.08); display:flex; align-items:center; gap:10px; overflow:hidden; min-height:58px; }
+    .user-info { transition: opacity .2s, width .2s; opacity:1; overflow:hidden; white-space:nowrap; }
+    body.sidebar-collapsed .user-info { opacity:0; width:0; }
+
+    .nav-section { padding: 8px 14px 4px; font-size: 10px; color: rgba(255,255,255,.3); letter-spacing: 1px; text-transform: uppercase; font-weight: 600; overflow:hidden; white-space:nowrap; transition: opacity .15s; }
+    body.sidebar-collapsed .nav-section { opacity:0; height:0; padding:0; margin:0; }
+
+    .nav-item { display: flex; padding: 9px 20px; color: rgba(255,255,255,.65); text-decoration: none; font-size: 13.5px; font-weight: 500; border-left: 3px solid transparent; transition: background .15s, border-color .15s, padding .25s; align-items: center; gap: 10px; white-space:nowrap; overflow:hidden; position:relative; }
+    .nav-item:hover { background: rgba(255,255,255,.06); color: white; border-left-color: rgba(253,185,19,.4); }
+    .nav-item.active { background: rgba(253,185,19,.12); color: var(--dotr-gold); border-left-color: var(--dotr-gold); font-weight: 600; }
+    .nav-item i { width: 18px; text-align: center; font-size: 14px; flex-shrink:0; }
+    .nav-item-label { transition: opacity .2s; opacity:1; }
+    body.sidebar-collapsed .nav-item-label { opacity:0; }
+    body.sidebar-collapsed .nav-item { padding: 9px 0; justify-content:center; border-left-color: transparent !important; }
+    body.sidebar-collapsed .nav-item:hover { background: rgba(255,255,255,.08); }
+    body.sidebar-collapsed .nav-item.active { background: rgba(253,185,19,.15); }
+    /* Tooltip on collapsed */
+    body.sidebar-collapsed .nav-item::after {
+      content: attr(data-label);
+      position: absolute; left: calc(var(--sidebar-w-collapsed) + 8px);
+      background: #1e3a6e; color: white; padding: 5px 10px;
+      border-radius: 6px; font-size: 12.5px; font-weight: 600;
+      white-space: nowrap; pointer-events: none;
+      opacity: 0; transition: opacity .15s;
+      box-shadow: 0 4px 12px rgba(0,0,0,.3);
+      z-index: 200;
+    }
+    body.sidebar-collapsed .nav-item:hover::after { opacity: 1; }
+
+    .sidebar-nav { flex: 1; padding: 8px 0; overflow-y: auto; overflow-x: hidden; min-height: 0; }
+    .sidebar-nav::-webkit-scrollbar { width: 4px; }
+    .sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+    .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 99px; }
+    .sidebar-nav::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.3); }
+    .sidebar-nav { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.15) transparent; }
+    .sidebar-footer { padding: 12px 0; border-top: 1px solid rgba(255,255,255,.08); }
+    /* ── Main ── */
+    .main-wrap { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; transition: margin-left .25s cubic-bezier(.4,0,.2,1); }
+    .topbar {
+      background: white; border-bottom: 1px solid var(--border);
+      padding: 0 20px 0 16px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+      gap: 12px;
+    }
+    .topbar-left { display:flex; align-items:center; gap:12px; }
+    .topbar-title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+    /* Toggle button */
+    .sidebar-toggle {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: transparent; border: 1.5px solid var(--border);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--text-secondary); flex-shrink:0;
+      transition: background .15s, border-color .15s, color .15s;
+    }
+    .sidebar-toggle:hover { background: var(--bg-main); border-color: var(--dotr-blue-light); color: var(--dotr-blue-light); }
+    .sidebar-toggle i { font-size: 14px; transition: transform .25s; }
+    body.sidebar-collapsed .sidebar-toggle i { transform: rotate(180deg); }
+    .topbar-right { display: flex; align-items: center; gap: 16px; }
+    /* Mobile overlay */
+    .sidebar-overlay {
+      display:none; position:fixed; inset:0; background:rgba(0,0,0,.5);
+      z-index:99; opacity:0; transition:opacity .25s;
+    }
+    .content { padding: 28px; flex: 1; }
+    /* ── Cards ── */
+    .card { background: var(--bg-card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .card-header { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .card-header h3 { font-size: 15px; font-weight: 700; }
+    .card-body { padding: 22px; }
+    /* ── Stat Cards ── */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .stat-card {
+      background: white; border-radius: var(--radius); padding: 20px 22px;
+      display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow);
+      border-left: 4px solid transparent; transition: transform .15s, box-shadow .15s;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+    .stat-card.blue { border-left-color: var(--dotr-blue-light); }
+    .stat-card.gold { border-left-color: var(--dotr-gold); }
+    .stat-card.green { border-left-color: var(--success); }
+    .stat-card.red { border-left-color: var(--danger); }
+    .stat-card.purple { border-left-color: #8b5cf6; }
+    .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .stat-icon.blue { background: rgba(37,99,235,.1); color: var(--dotr-blue-light); }
+    .stat-icon.gold { background: rgba(253,185,19,.15); color: var(--dotr-gold-dark); }
+    .stat-icon.green { background: rgba(16,185,129,.1); color: var(--success); }
+    .stat-icon.red { background: rgba(239,68,68,.1); color: var(--danger); }
+    .stat-icon.purple { background: rgba(139,92,246,.1); color: #8b5cf6; }
+    .stat-value { font-size: 28px; font-weight: 800; line-height: 1; color: var(--text-primary); }
+    .stat-label { font-size: 12px; color: var(--text-muted); margin-top: 3px; font-weight: 500; }
+    /* ── Buttons ── */
+    .btn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border-radius: 8px; font-size: 13.5px; font-weight: 600; border: none; cursor: pointer; text-decoration: none; transition: all .15s; font-family: inherit; }
+    .btn-sm { padding: 5px 12px; font-size: 12.5px; }
+    .btn-lg { padding: 11px 22px; font-size: 14.5px; }
+    .btn-primary { background: var(--dotr-blue-light); color: white; }
+    .btn-primary:hover { background: var(--dotr-blue); }
+    .btn-gold { background: var(--dotr-gold); color: var(--dotr-blue); }
+    .btn-gold:hover { background: var(--dotr-gold-dark); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--text-secondary); }
+    .btn-outline:hover { border-color: var(--dotr-blue-light); color: var(--dotr-blue-light); }
+    /* ── Tables ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    th { text-align: left; padding: 11px 14px; background: #f8fafc; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); border-bottom: 2px solid var(--border); }
+    td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text-primary); vertical-align: middle; }
+    tr:hover td { background: #f8fafc; }
+    /* ── Badges ── */
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+    .badge-blue { background: rgba(37,99,235,.1); color: var(--dotr-blue-light); }
+    .badge-gold { background: rgba(253,185,19,.2); color: #92620c; }
+    .badge-green { background: rgba(16,185,129,.1); color: #059669; }
+    .badge-red { background: rgba(239,68,68,.1); color: var(--danger); }
+    .badge-gray { background: #f1f5f9; color: var(--text-muted); }
+    .badge-purple { background: rgba(139,92,246,.1); color: #7c3aed; }
+    /* ── Forms ── */
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+    .form-control {
+      width: 100%; padding: 9px 13px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 13.5px; font-family: inherit;
+      transition: border-color .15s, box-shadow .15s; background: white; color: var(--text-primary);
+    }
+    .form-control:focus { outline: none; border-color: var(--dotr-blue-light); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+    select.form-control { cursor: pointer; }
+    textarea.form-control { resize: vertical; min-height: 90px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    /* ── Progress ── */
+    .progress-bar { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 99px; background: var(--dotr-blue-light); transition: width .3s; }
+    .progress-fill.gold { background: var(--dotr-gold); }
+    .progress-fill.green { background: var(--success); }
+    /* ── Alerts ── */
+    .alert { padding: 12px 16px; border-radius: 8px; font-size: 13.5px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 10px; }
+    .alert-success { background: rgba(16,185,129,.1); color: #065f46; border: 1px solid rgba(16,185,129,.2); }
+    .alert-error { background: rgba(239,68,68,.1); color: #991b1b; border: 1px solid rgba(239,68,68,.2); }
+    .alert-warning { background: rgba(245,158,11,.1); color: #92400e; border: 1px solid rgba(245,158,11,.2); }
+    .alert-info { background: rgba(59,130,246,.1); color: #1e40af; border: 1px solid rgba(59,130,246,.2); }
+    /* ── Breadcrumb ── */
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted); margin-bottom: 16px; }
+    .breadcrumb a { color: var(--dotr-blue-light); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    /* ── Pagination ── */
+    .pagination { display: flex; align-items: center; gap: 4px; margin-top: 20px; }
+    .page-btn { width: 34px; height: 34px; border: 1.5px solid var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--text-secondary); text-decoration: none; font-weight: 600; transition: all .15s; }
+    .page-btn:hover, .page-btn.active { background: var(--dotr-blue-light); border-color: var(--dotr-blue-light); color: white; }
+    /* ── Utilities ── */
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .gap-8 { gap: 8px; }
+    .gap-12 { gap: 12px; }
+    .mt-8 { margin-top: 8px; }
+    .mt-16 { margin-top: 16px; }
+    .mt-24 { margin-top: 24px; }
+    .mb-16 { margin-bottom: 16px; }
+    .mb-24 { margin-bottom: 24px; }
+    .text-sm { font-size: 12.5px; }
+    .text-muted { color: var(--text-muted); }
+    .font-bold { font-weight: 700; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+    .empty-state i { font-size: 48px; margin-bottom: 12px; opacity: .3; }
+    .empty-state p { font-size: 14px; }
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform .25s cubic-bezier(.4,0,.2,1);
+        width: var(--sidebar-w) !important;
+      }
+      .sidebar.mobile-open {
+        transform: translateX(0);
+      }
+      .main-wrap {
+        margin-left: 0 !important;
+      }
+      .sidebar-overlay.active {
+        display: block;
+        opacity: 1;
+      }
+      .form-grid, .form-grid-3, .grid-2, .grid-3 {
+        grid-template-columns: 1fr;
+      }
+      .stat-grid { grid-template-columns: 1fr 1fr; }
+      .content { padding: 16px; }
+      /* On mobile collapsed state has no effect */
+      body.sidebar-collapsed .sidebar { width: var(--sidebar-w) !important; }
+      body.sidebar-collapsed .main-wrap { margin-left: 0 !important; }
+    }
+    /* ── User Dropdown ── */
+    .user-dropdown { position: relative; }
+    .user-dropdown-btn {
+      display: flex; align-items: center; gap: 9px;
+      background: transparent; border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 5px 12px 5px 6px;
+      cursor: pointer; font-family: inherit;
+      transition: background .15s, border-color .15s, box-shadow .15s;
+      max-width: 220px;
+    }
+    .user-dropdown-btn:hover,
+    .user-dropdown-btn.open {
+      background: var(--bg-main); border-color: var(--dotr-blue-light);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.08);
+    }
+    .user-avatar-sm {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--dotr-gold); color: var(--dotr-blue);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 12px; flex-shrink: 0;
+    }
+    .user-dropdown-info {
+      display: flex; flex-direction: column; text-align: left; min-width: 0;
+    }
+    .user-dropdown-name {
+      font-size: 13px; font-weight: 700; color: var(--text-primary);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;
+    }
+    .user-dropdown-role {
+      font-size: 10.5px; color: var(--text-muted); font-weight: 500;
+    }
+    .user-dropdown-caret {
+      font-size: 10px; color: var(--text-muted); flex-shrink: 0;
+      transition: transform .2s; margin-left: 2px;
+    }
+    .user-dropdown-btn.open .user-dropdown-caret { transform: rotate(180deg); }
+
+    /* Dropdown panel */
+    .user-dropdown-menu {
+      display: none;
+      position: absolute; right: 0; top: calc(100% + 8px);
+      background: white; border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.14), 0 2px 8px rgba(0,0,0,.08);
+      border: 1px solid var(--border);
+      min-width: 240px; z-index: 500;
+      overflow: hidden;
+      animation: dropIn .15s ease;
+    }
+    .user-dropdown-menu.open { display: block; }
+    @keyframes dropIn {
+      from { opacity: 0; transform: translateY(-6px) scale(.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Dropdown header */
+    .dropdown-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px; background: linear-gradient(135deg, var(--dotr-blue), var(--dotr-blue-mid));
+    }
+    .dropdown-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--dotr-gold); color: var(--dotr-blue);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; font-size: 17px; flex-shrink: 0;
+      border: 2px solid rgba(255,255,255,.3);
+    }
+    .dropdown-fullname { font-size: 14px; font-weight: 700; color: white; }
+    .dropdown-email    { font-size: 11.5px; color: rgba(255,255,255,.65); margin-top: 1px; }
+    .dropdown-badge {
+      display: inline-block; margin-top: 5px;
+      background: rgba(253,185,19,.25); color: var(--dotr-gold);
+      font-size: 10px; font-weight: 700; padding: 2px 8px;
+      border-radius: 99px; letter-spacing: .3px;
+    }
+
+    /* Dropdown items */
+    .dropdown-divider { height: 1px; background: var(--border); margin: 4px 0; }
+    .dropdown-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; font-size: 13.5px; font-weight: 500;
+      color: var(--text-secondary); text-decoration: none;
+      transition: background .12s, color .12s;
+    }
+    .dropdown-item:hover { background: var(--bg-main); color: var(--text-primary); }
+    .dropdown-item i { width: 16px; text-align: center; font-size: 13px; color: var(--text-muted); }
+    .dropdown-item:hover i { color: var(--dotr-blue-light); }
+    .dropdown-item-danger { color: var(--danger) !important; }
+    .dropdown-item-danger i { color: var(--danger) !important; }
+    .dropdown-item-danger:hover { background: rgba(239,68,68,.06) !important; }
+
+    /* Hide name on small screens */
+    @media (max-width: 500px) {
+      .user-dropdown-info { display: none; }
+      .user-dropdown-btn { padding: 5px; border-radius: 50%; }
+      .user-dropdown-caret { display: none; }
+    }
+    /* ── End User Dropdown ── */
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+{% if user.is_authenticated %}
+<!-- Sidebar -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-logo">
+      <img src="{% static 'img/DOTr.png' %}" style="height: auto; width: 40px; margin-bottom: 5px;margin-right: 5px;" />
+      <div class="brand-text">
+        <div class="brand-name">DOTr LMS</div>
+        <div class="brand-sub">Learning Management System</div>      
+      </div>
+    </div>
+  </div>
+  {% comment %} <div class="sidebar-user">
+    <div class="user-avatar" style="width:34px;height:34px;border-radius:50%;background:var(--dotr-gold);color:var(--dotr-blue);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">{{ user.first_name|first }}{{ user.last_name|first }}</div>
+    <div class="user-info">
+      <div style="font-size:12.5px;color:white;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ user.get_full_name|default:user.username }}</div>
+      <div style="font-size:10.5px;color:rgba(255,255,255,.45);text-transform:capitalize;">{{ user.get_role_display }}</div>
+    </div>
+  </div> {% endcomment %}
+  <nav class="sidebar-nav">
+    <div class="nav-section">Main</div>
+    <a href="{% url 'dashboard' %}" data-label="Dashboard" class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+      <i class="fas fa-tachometer-alt"></i><span class="nav-item-label"> Dashboard</span>
+    </a>
+    <a href="{% url 'training_catalog' %}" data-label="Training Catalog" class="nav-item {% if 'training' in request.resolver_match.url_name|default:'' and 'manage' not in request.resolver_match.url_name|default:'' and 'request' not in request.resolver_match.url_name|default:'' and 'calendar' not in request.resolver_match.url_name|default:'' %}active{% endif %}">
+      <i class="fas fa-graduation-cap"></i><span class="nav-item-label"> Training Catalog</span>
+    </a>
+    <a href="{% url 'training_calendar' %}" data-label="Training Calendar" class="nav-item {% if request.resolver_match.url_name == 'training_calendar' %}active{% endif %}">
+      <i class="fas fa-calendar-alt"></i><span class="nav-item-label"> Training Calendar</span>
+    </a>
+    <a href="{% url 'my_learnings' %}" data-label="My Learnings" class="nav-item {% if request.resolver_match.url_name == 'my_learnings' %}active{% endif %}">
+      <i class="fas fa-book-open"></i><span class="nav-item-label"> My Learnings</span>
+    </a>
+    <a href="{% url 'training_request_list' %}" data-label="Training Requests" class="nav-item {% if 'request' in request.resolver_match.url_name|default:'' %}active{% endif %}">
+      <i class="fas fa-paper-plane"></i><span class="nav-item-label"> Training Requests</span>
+    </a>
+
+    <div class="nav-section">Growth</div>
+    <a href="{% url 'my_competencies' %}" data-label="My Competencies" class="nav-item {% if request.resolver_match.url_name == 'my_competencies' %}active{% endif %}">
+      <i class="fas fa-brain"></i><span class="nav-item-label"> My Competencies</span>
+    </a>
+    <a href="{% url 'idp_list' %}" data-label="Development Plan" class="nav-item {% if 'idp' in request.resolver_match.url_name|default:'' %}active{% endif %}">
+      <i class="fas fa-route"></i><span class="nav-item-label"> Development Plan (IDP)</span>
+    </a>
+    <a href="{% url 'my_certificates' %}" data-label="My Certificates" class="nav-item {% if 'certificate' in request.resolver_match.url_name|default:'' %}active{% endif %}">
+      <i class="fas fa-certificate"></i><span class="nav-item-label"> My Certificates</span>
+    </a>
+    <a href="{% url 'user_manual' %}" data-label="User Manual" class="nav-item {% if request.resolver_match.url_name == 'user_manual' %}active{% endif %}">
+      <i class="fas fa-book"></i><span class="nav-item-label"> User Manual</span>
+    </a>
+    <a href="{% url 'nomination_form' %}" data-label="L&D Nomination Form" class="nav-item {% if request.resolver_match.url_name == 'nomination_form' %}active{% endif %}">
+      <i class="fas fa-file-signature"></i><span class="nav-item-label"> L&amp;D Nomination Form</span>
+    </a>
+
+    {# ── DOTr Competency Framework — Admin, HR, Supervisor, Executive only ── #}
+    {% if user.role == 'admin' or user.role == 'hr' or user.role == 'supervisor' or user.role == 'executive' %}
+    <div class="nav-section">DOTr Competency</div>
+    <a href="{% url 'dotr_cf_about' %}" data-label="About Competency Framework" class="nav-item {% if request.resolver_match.url_name == 'dotr_cf_about' %}active{% endif %}">
+      <i class="fas fa-info-circle"></i><span class="nav-item-label"> About Competency Framework</span>
+    </a>
+    <a href="{% url 'dotr_cf_types' %}" data-label="Types of Competency" class="nav-item {% if request.resolver_match.url_name == 'dotr_cf_types' %}active{% endif %}">
+      <i class="fas fa-layer-group"></i><span class="nav-item-label"> Types of Competency</span>
+    </a>
+    <a href="{% url 'dotr_cf_levels' %}" data-label="Proficiency Levels" class="nav-item {% if request.resolver_match.url_name == 'dotr_cf_levels' %}active{% endif %}">
+      <i class="fas fa-chart-bar"></i><span class="nav-item-label"> Proficiency Levels</span>
+    </a>
+    <a href="{% url 'dotr_cf_list' %}" data-label="Competency Framework" class="nav-item {% if 'dotr_cf' in request.resolver_match.url_name|default:'' and request.resolver_match.url_name not in 'dotr_cf_about,dotr_cf_types,dotr_cf_levels,dotr_cf_office' %}active{% endif %}">
+      <i class="fas fa-star-half-alt"></i><span class="nav-item-label"> Competency Framework</span>
+    </a>
+    <a href="{% url 'dotr_cf_office' %}" data-label="Office/Division Framework" class="nav-item {% if request.resolver_match.url_name == 'dotr_cf_office' %}active{% endif %}">
+      <i class="fas fa-building"></i><span class="nav-item-label"> Office/Division Framework</span>
+    </a>
+    {% endif %}
+
+    {# ── Job Analysis Form — visible to all roles ── #}
+    <div class="nav-section">Job Analysis</div>
+    <a href="{% url 'jaf_list' %}" data-label="My Job Analysis Forms" class="nav-item {% if 'jaf' in request.resolver_match.url_name|default:'' and request.resolver_match.url_name != 'jaf_employee_picker' %}active{% endif %}">
+      <i class="fas fa-file-alt"></i><span class="nav-item-label"> Job Analysis Forms</span>
+    </a>
+
+    {# Supervisor / Division Head: create JAF on behalf of employees #}
+    {% if user.role in 'supervisor,admin,hr' %}
+    <a href="{% url 'jaf_employee_picker' %}" data-label="Create JAF for Employee" class="nav-item {% if request.resolver_match.url_name == 'jaf_employee_picker' or request.resolver_match.url_name == 'jaf_create_for_employee' %}active{% endif %}">
+      <i class="fas fa-user-edit"></i><span class="nav-item-label"> Create JAF for Employee</span>
+    </a>
+    {% endif %}
+
+    {# Executive / Director: approval queue shortcut #}
+    {% if user.role == 'executive' %}
+    <a href="{% url 'jaf_list' %}" data-label="Pending Approvals" class="nav-item">
+      <i class="fas fa-clipboard-check"></i><span class="nav-item-label"> Pending Approvals</span>
+    </a>
+    {% endif %}
+
+    {% if user.role in 'admin,hr,supervisor' %}
+    <div class="nav-section">Management</div>
+    {% endif %}
+    {% if user.role in 'admin,hr' %}
+    <a href="{% url 'training_manage' %}" data-label="Manage Trainings" class="nav-item {% if request.resolver_match.url_name == 'training_manage' %}active{% endif %}">
+      <i class="fas fa-cogs"></i><span class="nav-item-label"> Manage Trainings</span>
+    </a>
+    <a href="{% url 'user_list' %}" data-label="Employees" class="nav-item {% if 'user' in request.resolver_match.url_name|default:'' %}active{% endif %}">
+      <i class="fas fa-users"></i><span class="nav-item-label"> Employees</span>
+    </a>
+    <a href="{% url 'competency_list' %}" data-label="Competency Framework" class="nav-item {% if request.resolver_match.url_name == 'competency_list' %}active{% endif %}">
+      <i class="fas fa-star"></i><span class="nav-item-label"> Competency Framework</span>
+    </a>
+    {% comment %} <a href="{% url 'job_description_list' %}" data-label="Job Analysis" class="nav-item {% if 'job_description' in request.resolver_match.url_name|default:'' or 'job_analysis' in request.resolver_match.url_name|default:'' %}active{% endif %}">
+      <i class="fas fa-file-search"></i><span class="nav-item-label"> Job Analysis</span>
+    </a> {% endcomment %}
+    <a href="{% url 'gap_analysis' %}" data-label="Gap Analysis" class="nav-item {% if request.resolver_match.url_name == 'gap_analysis' %}active{% endif %}">
+      <i class="fas fa-chart-bar"></i><span class="nav-item-label"> Gap Analysis</span>
+    </a>
+    <a href="{% url 'reports' %}" data-label="Reports" class="nav-item {% if request.resolver_match.url_name == 'reports' %}active{% endif %}">
+      <i class="fas fa-chart-line"></i><span class="nav-item-label"> Reports</span>
+    </a>
+    <a href="{% url 'compliance_report' %}" data-label="PRIME-HRM Compliance" class="nav-item {% if request.resolver_match.url_name == 'compliance_report' %}active{% endif %}">
+      <i class="fas fa-clipboard-check"></i><span class="nav-item-label"> PRIME-HRM Compliance</span>
+    </a>
+    <a href="{% url 'certificate_list' %}" data-label="All Certificates" class="nav-item">
+      <i class="fas fa-award"></i><span class="nav-item-label"> All Certificates</span>
+    </a>
+    <a href="{% url 'template_list' %}" data-label="Cert Templates" class="nav-item {% if 'template' in request.resolver_match.url_name|default:'' %}active{% endif %}">
+      <i class="fas fa-palette"></i><span class="nav-item-label"> Certificate Templates</span>
+    </a>
+    <a href="{% url 'division_list' %}" data-label="Divisions" class="nav-item">
+      <i class="fas fa-sitemap"></i><span class="nav-item-label"> Divisions</span>
+    </a>
+    <a href="{% url 'org_structure_history' %}" data-label="Org Structure" class="nav-item {% if 'org_structure' in request.resolver_match.url_name|default:'' %}active{% endif %}">
+      <i class="fas fa-network-wired"></i><span class="nav-item-label"> Org Structure</span>
+    </a>
+    {% endif %}
+    {% if user.role == 'admin' %}
+    <a href="/admin/" data-label="Django Admin" class="nav-item">
+      <i class="fas fa-tools"></i><span class="nav-item-label"> Django Admin</span>
+    </a>
+    <a href="{% url 'audit_log' %}" data-label="Audit Log" class="nav-item">
+      <i class="fas fa-history"></i><span class="nav-item-label"> Audit Log</span>
+    </a>
+    {% endif %}
+  </nav>
+  <div class="sidebar-footer">
+    <p style="font-size:12px;color:var(--text-muted);text-align:center;margin-bottom:4px;"><a href="https://dotr.gov.ph" target="_blank" style="color:var(--text-muted);text-decoration:underline;">Department of Transportation</a></p>
+    <p style="font-size:11px;color:var(--text-muted);text-align:center;">&copy; {{ current_year }} DOTr LMS Version 1.0.0</p>
+    <p style="font-size:10px;color:var(--text-muted);text-align:center;margin-top:0px;">Developed by MISS-CNSD</p>
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="main-wrap">
+  <header class="topbar">
+    <div class="topbar-left">
+      <!-- Sidebar toggle button -->
+      <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle Sidebar" aria-label="Toggle Sidebar">
+        <i class="fas fa-bars"></i>
+      </button>
+      <span class="topbar-title">{% block page_title %}Dashboard{% endblock %}</span>
+    </div>
+    <div class="topbar-right">
+      <!-- User dropdown -->
+      <div class="user-dropdown" id="user-dropdown">
+        <button class="user-dropdown-btn" id="user-dropdown-btn" aria-haspopup="true" aria-expanded="false">
+          <div class="user-avatar-sm">{{ user.first_name|first }}{{ user.last_name|first }}</div>
+          <div class="user-dropdown-info">
+            <span class="user-dropdown-name">{{ user.get_full_name|default:user.username }}</span>
+            <span class="user-dropdown-role">{{ user.get_role_display }}</span>
+          </div>
+          <i class="fas fa-chevron-down user-dropdown-caret"></i>
+        </button>
+
+        <!-- Dropdown panel -->
+        <div class="user-dropdown-menu" id="user-dropdown-menu" role="menu">
+          <!-- User info header -->
+          <div class="dropdown-header">
+            <div class="dropdown-avatar">{{ user.first_name|first }}{{ user.last_name|first }}</div>
+            <div>
+              <div class="dropdown-fullname">{{ user.get_full_name|default:user.username }}</div>
+              <div class="dropdown-email">{{ user.email|default:"—" }}</div>
+              <div class="dropdown-badge">{{ user.get_role_display }}</div>
+            </div>
+          </div>
+
+          <div class="dropdown-divider"></div>
+
+          <!-- Links -->
+          <a href="{% url 'profile' %}" class="dropdown-item" role="menuitem">
+            <i class="fas fa-user-circle"></i> My Profile
+          </a>
+          <a href="{% url 'my_learnings' %}" class="dropdown-item" role="menuitem">
+            <i class="fas fa-book-open"></i> My Learnings
+          </a>
+          <a href="{% url 'my_certificates' %}" class="dropdown-item" role="menuitem">
+            <i class="fas fa-certificate"></i> My Certificates
+          </a>
+          <a href="{% url 'idp_list' %}" class="dropdown-item" role="menuitem">
+            <i class="fas fa-route"></i> My IDP
+          </a>
+
+          <div class="dropdown-divider"></div>
+
+          <a href="{% url 'user_edit' pk=user.pk %}" class="dropdown-item" role="menuitem">
+            <i class="fas fa-cog"></i> Account Settings
+          </a>
+
+          <div class="dropdown-divider"></div>
+
+          <form method="post" action="{% url 'logout' %}" style="margin:0;">
+            {% csrf_token %}
+            <button type="submit" class="dropdown-item dropdown-item-danger" style="background:none;border:none;width:100%;text-align:left;cursor:pointer;">
+              <i class="fas fa-sign-out-alt"></i> Sign Out
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </header>
+  <main class="content">
+    {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags|default:'info' }}">
+      <i class="fas fa-{% if msg.tags == 'success' %}check-circle{% elif msg.tags == 'error' %}exclamation-circle{% elif msg.tags == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+      {{ msg }}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% else %}
+<!-- Login page - no sidebar -->
+<div style="width:100%;">{% block auth_content %}{% endblock %}</div>
+{% endif %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  /* ── User Dropdown ── */
+  var dropBtn  = document.getElementById('user-dropdown-btn');
+  var dropMenu = document.getElementById('user-dropdown-menu');
+
+  if (dropBtn && dropMenu) {
+    dropBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var isOpen = dropMenu.classList.contains('open');
+      dropMenu.classList.toggle('open');
+      dropBtn.classList.toggle('open');
+      dropBtn.setAttribute('aria-expanded', String(!isOpen));
+    });
+
+    /* Close when clicking outside */
+    document.addEventListener('click', function (e) {
+      if (!document.getElementById('user-dropdown').contains(e.target)) {
+        dropMenu.classList.remove('open');
+        dropBtn.classList.remove('open');
+        dropBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    /* Close on Escape */
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') {
+        dropMenu.classList.remove('open');
+        dropBtn.classList.remove('open');
+        dropBtn.setAttribute('aria-expanded', 'false');
+        dropBtn.focus();
+      }
+    });
+  }
+
+  /* ── Sidebar Toggle ── */
+  var STORAGE_KEY = 'dotr_sidebar_collapsed';
+  var body    = document.body;
+  var btn     = document.getElementById('sidebar-toggle');
+  var sidebar = document.getElementById('sidebar');
+  var overlay = document.getElementById('sidebar-overlay');
+
+  function isMobile() {
+    return window.innerWidth <= 768;
+  }
+
+  /* ── Restore desktop collapsed state on page load ── */
+  if (!isMobile() && localStorage.getItem(STORAGE_KEY) === '1') {
+    body.classList.add('sidebar-collapsed');
+  }
+
+  /* ── Toggle button ── */
+  if (btn) {
+    btn.addEventListener('click', function () {
+      if (isMobile()) {
+        /* Mobile: slide sidebar in/out */
+        var isOpen = sidebar.classList.contains('mobile-open');
+        if (isOpen) {
+          sidebar.classList.remove('mobile-open');
+          if (overlay) overlay.classList.remove('active');
+        } else {
+          sidebar.classList.add('mobile-open');
+          if (overlay) overlay.classList.add('active');
+        }
+      } else {
+        /* Desktop: collapse/expand */
+        body.classList.toggle('sidebar-collapsed');
+        localStorage.setItem(STORAGE_KEY,
+          body.classList.contains('sidebar-collapsed') ? '1' : '0');
+      }
+    });
+  }
+
+  /* ── Overlay click closes mobile sidebar ── */
+  if (overlay) {
+    overlay.addEventListener('click', function () {
+      sidebar.classList.remove('mobile-open');
+      overlay.classList.remove('active');
+    });
+  }
+
+  /* ── Nav link click closes mobile sidebar ── */
+  if (sidebar) {
+    sidebar.querySelectorAll('a.nav-item').forEach(function (link) {
+      link.addEventListener('click', function () {
+        if (isMobile()) {
+          sidebar.classList.remove('mobile-open');
+          if (overlay) overlay.classList.remove('active');
+        }
+      });
+    });
+  }
+
+  /* ── Window resize: clean up states ── */
+  window.addEventListener('resize', function () {
+    if (!isMobile()) {
+      /* Going to desktop — remove mobile classes */
+      sidebar.classList.remove('mobile-open');
+      if (overlay) overlay.classList.remove('active');
+      /* Restore desktop collapsed preference */
+      if (localStorage.getItem(STORAGE_KEY) === '1') {
+        body.classList.add('sidebar-collapsed');
+      }
+    } else {
+      /* Going to mobile — remove desktop collapsed class */
+      body.classList.remove('sidebar-collapsed');
+    }
+  });
+});
+</script>
+{% block extra_js %}{% endblock %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  flatpickr('.datepicker', {
+    dateFormat: 'Y-m-d',
+    allowInput: true,
+    disableMobile: false,
+  });
+});
+</script>
+</body>
+</html>

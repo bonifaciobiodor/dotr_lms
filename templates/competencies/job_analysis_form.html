@@ -1,0 +1,32 @@
+{% extends 'base/base.html' %}
+{% block title %}Conduct Job Analysis — {{ jd.position_title }}{% endblock %}
+{% block page_title %}Conduct Job Analysis{% endblock %}
+{% block content %}
+<div style="max-width:680px;">
+  <div class="card">
+    <div class="card-header">
+      <h3><i class="fas fa-search-plus" style="color:var(--dotr-gold-dark);margin-right:8px;"></i> New Job Analysis</h3>
+    </div>
+    <div class="card-body">
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;margin-bottom:20px;font-size:13px;">
+        <strong>Position:</strong> {{ jd.position_title }}
+        {% if jd.division %} &bull; <strong>Division:</strong> {{ jd.division }}{% endif %}
+        {% if jd.salary_grade %} &bull; <strong>SG-{{ jd.salary_grade }}</strong>{% endif %}
+      </div>
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Analysis Summary / Methodology</label>
+          <textarea name="summary" class="form-control" rows="5"
+            placeholder="Briefly describe the method used to conduct this job analysis (e.g., task inventory, interview, observation, questionnaire) and any key findings from reviewing the job description."></textarea>
+          <small style="color:var(--text-muted);font-size:12px;">This will be recorded as the rationale for the competency profile derived from this analysis.</small>
+        </div>
+        <div style="display:flex;gap:12px;">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-arrow-right"></i> Start Analysis</button>
+          <a href="{% url 'job_description_detail' pk=jd.pk %}" class="btn btn-outline">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends 'base/base.html' %}
+{% block title %}Competency Framework{% endblock %}
+{% block page_title %}Competency Framework{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+  <p style="color:var(--text-muted);">CSC-aligned competency framework for DOTR personnel</p>
+  {% if user.role in 'admin,hr' %}<a href="{% url 'competency_create' %}" class="btn btn-gold"><i class="fas fa-plus"></i> Add Competency</a>{% endif %}
+</div>
+{% regroup competencies by get_category_display as category_groups %}
+{% for group in category_groups %}
+<div class="card" style="margin-bottom:18px;">
+  <div class="card-header">
+    <h3>
+      <i class="fas fa-{% if group.grouper == 'Core Competency' %}star{% elif group.grouper == 'Leadership Competency' %}crown{% elif group.grouper == 'Technical Competency' %}cogs{% else %}puzzle-piece{% endif %}" style="color:var(--dotr-gold-dark);margin-right:8px;"></i>
+      {{ group.grouper }}
+    </h3>
+    <span class="badge badge-blue">{{ group.list|length }}</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Code</th><th>Competency</th><th>Description</th>{% if user.role in 'admin,hr' %}<th>Actions</th>{% endif %}</tr></thead>
+      <tbody>
+        {% for comp in group.list %}
+        <tr>
+          <td><code style="font-family:'DM Mono',monospace;font-size:12px;background:#f1f5f9;padding:2px 7px;border-radius:4px;">{{ comp.code }}</code></td>
+          <td style="font-weight:600;font-size:13.5px;">{{ comp.name }}</td>
+          <td style="font-size:13px;color:var(--text-secondary);max-width:320px;">{{ comp.description|truncatechars:100 }}</td>
+          {% if user.role in 'admin,hr' %}<td><a href="{% url 'competency_edit' pk=comp.pk %}" class="btn btn-outline btn-sm"><i class="fas fa-edit"></i></a></td>{% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

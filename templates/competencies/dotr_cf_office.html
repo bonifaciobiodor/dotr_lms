@@ -1,0 +1,126 @@
+{% extends 'base/base.html' %}
+{% block title %}Office/Division Competency Framework{% endblock %}
+{% block page_title %}Office / Service / Division Framework{% endblock %}
+{% block content %}
+
+<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:18px;">
+  <p style="color:var(--text-muted);">View functional competencies by Office, Service, or Division</p>
+  {% if can_manage %}
+  <a href="{% url 'dotr_cf_create' %}" class="btn btn-gold"><i class="fas fa-plus"></i> Add Functional Competency</a>
+  {% endif %}
+</div>
+
+<!-- Office Selector -->
+<div class="card" style="margin-bottom:20px;">
+  <div style="padding:16px 20px;">
+    <form method="get" style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+      <div style="flex:1;min-width:240px;">
+        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Select Office / Service / Division</label>
+        <select name="office" class="form-control" onchange="this.form.submit()">
+          <option value="">— Choose an Office —</option>
+          {% for o in offices %}
+          <option value="{{ o.name }}" {% if selected_office == o.name %}selected{% endif %}>{{ o.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% if not offices %}
+      <p style="color:var(--text-muted);font-size:13px;font-style:italic;">No functional competencies added yet.</p>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+{% if selected_office %}
+<h3 style="margin-bottom:14px;color:var(--text-primary);font-size:16px;">
+  <i class="fas fa-building" style="color:var(--dotr-gold-dark);margin-right:8px;"></i>{{ selected_office }}
+</h3>
+
+{% if mandates %}
+<div class="card" style="margin-bottom:20px;border-left:4px solid var(--dotr-gold);">
+  <div class="card-header" style="background:#fefce8;">
+    <h4 style="font-size:14px;font-weight:700;color:var(--text-primary);">
+      <i class="fas fa-list-ol" style="color:var(--dotr-gold-dark);margin-right:8px;"></i>Mandates / Functions
+    </h4>
+  </div>
+  <div style="padding:14px 20px;">
+    <ol style="margin:0;padding-left:20px;line-height:1.8;color:var(--text-secondary);font-size:13px;">
+      {% for m in mandates %}
+      <li style="margin-bottom:4px;">{{ m.description }}</li>
+      {% endfor %}
+    </ol>
+  </div>
+</div>
+{% endif %}
+
+{% if competencies_with_levels %}
+{% for entry in competencies_with_levels %}
+{% with comp=entry.comp levels=entry.levels %}
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-header">
+    <h4 style="font-size:15px;">
+      <i class="fas fa-puzzle-piece" style="color:var(--dotr-gold-dark);margin-right:8px;"></i>
+      <a href="{% url 'dotr_cf_detail' pk=comp.pk %}" style="color:var(--text-primary);text-decoration:none;">{{ comp.name }}</a>
+    </h4>
+    <div style="display:flex;gap:8px;">
+      {% if can_manage %}
+      <a href="{% url 'dotr_cf_edit' pk=comp.pk %}" class="btn btn-outline btn-sm"><i class="fas fa-edit"></i></a>
+      {% endif %}
+      <a href="{% url 'dotr_cf_detail' pk=comp.pk %}" class="btn btn-outline btn-sm"><i class="fas fa-eye"></i></a>
+    </div>
+  </div>
+
+  {% if comp.description %}
+  <div style="padding:10px 20px 0;color:var(--text-muted);font-size:13px;font-style:italic;">{{ comp.description }}</div>
+  {% endif %}
+
+  <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr>
+          {% for level_val, data in levels.items %}
+          <th style="padding:12px 14px;width:25%;border-right:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.5px;
+            {% if level_val == 1 %}background:#eff6ff;color:#1d4ed8;
+            {% elif level_val == 2 %}background:#f0fdf4;color:#065f46;
+            {% elif level_val == 3 %}background:#fffbeb;color:#92400e;
+            {% else %}background:#fdf4ff;color:#6b21a8;{% endif %}">
+            Level {{ level_val }} — {{ data.label }}
+          </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          {% for level_val, data in levels.items %}
+          <td style="vertical-align:top;padding:14px;border-right:1px solid var(--border);border-top:1px solid var(--border);">
+            {% if data.items %}
+            <ul style="margin:0;padding-left:0;list-style:none;">
+              {% for item in data.items %}
+              <li style="display:flex;gap:6px;margin-bottom:8px;line-height:1.5;color:var(--text-secondary);">
+                <span style="flex-shrink:0;font-weight:600;color:var(--text-primary);font-size:11px;min-width:26px;">
+                  {% if item.indicator_number %}{{ item.indicator_number }}{% else %}{{ level_val }}.{{ forloop.counter }}{% endif %}
+                </span>
+                <span>{{ item.description }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <span style="color:var(--text-muted);font-style:italic;font-size:11px;">No indicators</span>
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endwith %}
+{% endfor %}
+{% else %}
+<div class="card" style="padding:30px;text-align:center;color:var(--text-muted);">
+  No functional competencies found for this office.
+</div>
+{% endif %}
+
+{% endif %}
+
+{% endblock %}

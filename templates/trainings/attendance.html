@@ -1,0 +1,35 @@
+{% extends 'base/base.html' %}
+{% block title %}Attendance{% endblock %}
+{% block page_title %}Attendance — {{ training.title|truncatechars:50 }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header"><h3><i class="fas fa-calendar-check" style="color:var(--success);margin-right:8px;"></i>Record Attendance</h3></div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group" style="max-width:240px;">
+        <label class="form-label">Date *</label>
+        <input type="text" name="date" class="form-control datepicker" value="{{ today|date:'Y-m-d' }}" placeholder="YYYY-MM-DD" required>
+      </div>
+      <div class="table-wrap" style="margin:16px 0;">
+        <table>
+          <thead><tr><th>Employee</th><th>Present</th><th>Time In</th><th>Time Out</th></tr></thead>
+          <tbody>
+            {% for enr in enrollments %}
+            <tr>
+              <td style="font-weight:600;">{{ enr.user.get_full_name }}</td>
+              <td><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" name="present_{{ enr.id }}" checked style="width:16px;height:16px;accent-color:var(--success);"> <span style="font-size:13px;">Present</span></label></td>
+              <td><input type="time" name="time_in_{{ enr.id }}" class="form-control" style="width:130px;" value="08:00"></td>
+              <td><input type="time" name="time_out_{{ enr.id }}" class="form-control" style="width:130px;" value="17:00"></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No enrolled learners.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-save"></i> Save Attendance</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,504 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<style>
+  .jaf-wrap { max-width: 100%; }
+  .jaf-section-header {
+    background: #1e3a8a;
+    color: #fff;
+    text-align: center;
+    padding: 9px 16px;
+    font-weight: 700;
+    font-size: 13.5px;
+    letter-spacing: .3px;
+    border-radius: 0;
+  }
+  .jaf-section-sub {
+    text-align: center;
+    font-style: italic;
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding: 4px 16px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .jaf-field-row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    border-bottom: 1px solid var(--border);
+  }
+  .jaf-field-label {
+    font-weight: 700;
+    font-size: 13px;
+    padding: 10px 14px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+  }
+  .jaf-field-value { padding: 6px 10px; }
+  .jaf-field-value input,
+  .jaf-field-value textarea {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    font-size: 13.5px;
+    background: transparent;
+    resize: vertical;
+    padding: 4px 6px;
+    border-radius: 4px;
+  }
+  .jaf-field-value input:focus,
+  .jaf-field-value textarea:focus {
+    background: #eff6ff;
+    outline: 2px solid #93c5fd;
+  }
+  .duty-table { width: 100%; border-collapse: collapse; }
+  .duty-table th, .duty-table td {
+    border: 1px solid var(--border);
+    padding: 7px 10px;
+    font-size: 13px;
+    vertical-align: middle;
+  }
+  .duty-table th {
+    background: #f1f5f9;
+    font-weight: 700;
+    text-align: center;
+    font-size: 12px;
+  }
+  .duty-table td.task-col { width: 55%; }
+  .duty-table td.freq-col { width: 9%; text-align: center; }
+  .duty-table input[type=text] { width: 100%; border: none; outline: none; font-size: 13px; background: transparent; }
+  .duty-table input[type=text]:focus { background: #eff6ff; border-radius: 3px; outline: 2px solid #93c5fd; }
+  .duty-table input[type=radio] { accent-color: #1e3a8a; transform: scale(1.2); }
+  .skill-table { width: 100%; border-collapse: collapse; }
+  .skill-table th, .skill-table td {
+    border: 1px solid var(--border);
+    padding: 7px 10px;
+    font-size: 13px;
+    vertical-align: middle;
+  }
+  .skill-table th { background: #f1f5f9; font-weight: 700; text-align: center; font-size: 12px; }
+  .skill-table td.skill-col { width: 50%; }
+  .skill-table td.level-col { width: 12.5%; text-align: center; }
+  .skill-table select { width: 100%; border: none; outline: none; font-size: 13px; background: transparent; cursor: pointer; }
+  .skill-table select:focus { background: #eff6ff; border-radius: 3px; outline: 2px solid #93c5fd; }
+  .skill-table input[type=radio] { accent-color: #1e3a8a; transform: scale(1.2); }
+  .tool-table { width: 100%; border-collapse: collapse; }
+  .tool-table th, .tool-table td {
+    border: 1px solid var(--border);
+    padding: 7px 10px;
+    font-size: 13px;
+  }
+  .tool-table th { background: #f1f5f9; font-weight: 700; font-size: 12px; }
+  .tool-table input[type=text] { width: 100%; border: none; outline: none; font-size: 13px; background: transparent; }
+  .tool-table input[type=text]:focus { background: #eff6ff; border-radius: 3px; outline: 2px solid #93c5fd; }
+  .add-row-btn {
+    font-size: 12px;
+    color: var(--dotr-blue-light);
+    background: none;
+    border: 1px dashed #93c5fd;
+    border-radius: 6px;
+    padding: 5px 12px;
+    cursor: pointer;
+    margin-top: 6px;
+  }
+  .add-row-btn:hover { background: #eff6ff; }
+  .remove-row-btn {
+    background: none;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    padding: 2px 6px;
+    font-size: 13px;
+    opacity: .6;
+  }
+  .remove-row-btn:hover { opacity: 1; }
+</style>
+
+<div class="jaf-wrap">
+  <!-- DOTr Header -->
+  <div class="card" style="padding:0;overflow:hidden;">
+    <form method="post" id="jaf-form">
+      {% csrf_token %}
+
+      {% if for_employee %}
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;color:#1e40af;display:flex;align-items:center;gap:8px;">
+        <i class="fas fa-user-edit"></i>
+        <span>Creating Job Analysis Form on behalf of <strong>{{ for_employee.get_full_name }}</strong> — all sections, including Required Competencies, will be saved directly.</span>
+      </div>
+      {% endif %}
+
+      <!-- Agency header -->
+      <div style="display:flex;align-items:center;gap:16px;padding:16px 20px;border-bottom:2px solid var(--border);">
+        <div style="display:flex;gap:10px;align-items:center;">
+          <img src="/static/img/DOTr.png" alt="DOTr" style="height:52px;object-fit:contain;" onerror="this.style.display='none'">
+          <img src="/static/img/bagong_pilipinas.png" alt="Bagong Pilipinas" style="height:52px;object-fit:contain;" onerror="this.style.display='none'">
+        </div>
+        <div>
+          <div style="font-size:12px;">Republic of the Philippines</div>
+          <div style="font-weight:800;font-size:14px;letter-spacing:.5px;">DEPARTMENT OF TRANSPORTATION</div>
+        </div>
+      </div>
+
+      <!-- Form title -->
+      <div style="background:#1e3a8a;color:#fff;text-align:center;padding:12px;font-size:17px;font-weight:800;letter-spacing:.5px;">
+        JOB ANALYSIS FORM
+      </div>
+
+      <!-- Introduction notice -->
+      <div style="padding:12px 16px;font-size:12.5px;background:#fefce8;border-bottom:1px solid #fde68a;color:#713f12;">
+        <strong>PLEASE BE ADVISED</strong> that the definitions of specific terms and instructions of this form are provided for your reference. You may also incorporate additional rows beyond the provided minimum.
+      </div>
+
+      <!-- Header fields -->
+      <div class="jaf-field-row">
+        <div class="jaf-field-label">Full Name</div>
+        <div class="jaf-field-value">
+          <input type="text" name="full_name" required
+            value="{{ entry.full_name|default:prefill_full_name|default:'' }}"
+            placeholder="Last Name, First Name, Middle Name">
+        </div>
+      </div>
+      <div class="jaf-field-row">
+        <div class="jaf-field-label">Position Title</div>
+        <div class="jaf-field-value">
+          <input type="text" name="position_title" required
+            value="{{ entry.position_title|default:prefill_position_title|default:'' }}"
+            placeholder="e.g. Administrative Officer II">
+        </div>
+      </div>
+      <div class="jaf-field-row">
+        <div class="jaf-field-label">Office/Service/Division</div>
+        <div class="jaf-field-value">
+          <input type="text" name="office_service_division"
+            value="{{ entry.office_service_division|default:prefill_office_service_division|default:'' }}"
+            placeholder="e.g. Human Resource Development Service">
+        </div>
+      </div>
+      <div class="jaf-field-row">
+        <div class="jaf-field-label">Section/Project/Unit</div>
+        <div class="jaf-field-value">
+          <input type="text" name="section_project_unit"
+            value="{{ entry.section_project_unit|default:'' }}"
+            placeholder="e.g. Training and Development Section">
+        </div>
+      </div>
+      <div class="jaf-field-row" style="border-bottom:2px solid var(--border);">
+        <div class="jaf-field-label">Alternate Position</div>
+        <div class="jaf-field-value">
+          <input type="text" name="alternate_position"
+            value="{{ entry.alternate_position|default:'' }}"
+            placeholder="Position held in absence of immediate supervisor (if any)">
+        </div>
+      </div>
+
+      <!-- Job Purpose -->
+      <div class="jaf-section-header">JOB PURPOSE</div>
+      <div class="jaf-section-sub">Brief Description of the general function and purpose of the position.</div>
+      <div style="padding:10px 14px;border-bottom:2px solid var(--border);">
+        <textarea name="job_purpose" class="form-control" rows="4"
+          placeholder="Describe the overall function and purpose of your position…">{{ entry.job_purpose|default:'' }}</textarea>
+      </div>
+
+      <!-- Main Duties -->
+      <div class="jaf-section-header">MAIN DUTIES AND RESPONSIBILITIES</div>
+      <div style="padding:10px 12px 4px;font-size:12.5px;color:var(--text-secondary);border-bottom:1px solid var(--border);">
+        Provide a detailed outline of the primary tasks, functions, and obligations associated with the position. These should be specific, measurable, and aligned with the overall goals of the organization.
+      </div>
+      <div style="padding:10px 14px;border-bottom:2px solid var(--border);">
+        <textarea name="main_duties" class="form-control" rows="7"
+          placeholder="List your main duties and responsibilities here. You may use numbered or bulleted format.&#10;&#10;1. …&#10;2. …&#10;3. …">{{ entry.main_duties|default:'' }}</textarea>
+      </div>
+
+      <!-- Secondary Duties -->
+      <div class="jaf-section-header">SECONDARY DUTIES &amp; RESPONSIBILITIES</div>
+      <div style="padding:8px 12px 6px;font-size:12.5px;color:var(--text-secondary);border-bottom:1px solid var(--border);">
+        Additional duties that support the main responsibilities — occasional assignments, administrative support, or other related activities as required.
+      </div>
+      <div style="padding:14px;border-bottom:2px solid var(--border);">
+        <table class="duty-table" id="duty-table">
+          <thead>
+            <tr>
+              <th style="width:5%;">NO.</th>
+              <th class="task-col">TASKS</th>
+              <th class="freq-col">Daily</th>
+              <th class="freq-col">Weekly</th>
+              <th class="freq-col">Monthly</th>
+              <th class="freq-col">Quarterly</th>
+              <th class="freq-col" style="width:13%;">Periodically / As Instructed</th>
+              <th style="width:4%;"></th>
+            </tr>
+          </thead>
+          <tbody id="duty-body">
+            {% if secondary_duties %}
+              {% for d in secondary_duties %}
+              <tr>
+                <td style="text-align:center;color:var(--text-muted);">{{ forloop.counter }}</td>
+                <td class="task-col"><input type="text" name="task_{{ forloop.counter }}" value="{{ d.task }}" placeholder="Describe task…"></td>
+                <td class="freq-col"><input type="radio" name="freq_{{ forloop.counter }}" value="daily" {% if d.frequency == 'daily' %}checked{% endif %}></td>
+                <td class="freq-col"><input type="radio" name="freq_{{ forloop.counter }}" value="weekly" {% if d.frequency == 'weekly' %}checked{% endif %}></td>
+                <td class="freq-col"><input type="radio" name="freq_{{ forloop.counter }}" value="monthly" {% if d.frequency == 'monthly' %}checked{% endif %}></td>
+                <td class="freq-col"><input type="radio" name="freq_{{ forloop.counter }}" value="quarterly" {% if d.frequency == 'quarterly' %}checked{% endif %}></td>
+                <td class="freq-col"><input type="radio" name="freq_{{ forloop.counter }}" value="periodically" {% if d.frequency == 'periodically' %}checked{% endif %}></td>
+                <td><button type="button" class="remove-row-btn" onclick="removeDutyRow(this)"><i class="fas fa-times"></i></button></td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              {% for i in "1234567890" %}
+              <tr>
+                <td style="text-align:center;color:var(--text-muted);">{{ forloop.counter }}</td>
+                <td class="task-col"><input type="text" name="task_{{ forloop.counter }}" placeholder="Describe task…"></td>
+                <td class="freq-col"><input type="radio" name="freq_{{ forloop.counter }}" value="daily"></td>
+                <td class="freq-col"><input type="radio" name="freq_{{ forloop.counter }}" value="weekly"></td>
+                <td class="freq-col"><input type="radio" name="freq_{{ forloop.counter }}" value="monthly"></td>
+                <td class="freq-col"><input type="radio" name="freq_{{ forloop.counter }}" value="quarterly"></td>
+                <td class="freq-col"><input type="radio" name="freq_{{ forloop.counter }}" value="periodically"></td>
+                <td><button type="button" class="remove-row-btn" onclick="removeDutyRow(this)"><i class="fas fa-times"></i></button></td>
+              </tr>
+              {% endfor %}
+            {% endif %}
+          </tbody>
+        </table>
+        <button type="button" class="add-row-btn" onclick="addDutyRow()">
+          <i class="fas fa-plus"></i> Add Row
+        </button>
+      </div>
+
+      <!-- Required Competencies -->
+      <div class="jaf-section-header">REQUIRED COMPETENCIES</div>
+      {% if supervisor_mode %}
+      <div style="padding:8px 12px 6px;font-size:12.5px;color:var(--text-secondary);border-bottom:1px solid var(--border);">
+        Select from the competency framework the abilities and competencies required to perform the duties effectively.
+      </div>
+      <div style="padding:14px;border-bottom:2px solid var(--border);">
+        <table class="skill-table" id="skill-table">
+          <thead>
+            <tr>
+              <th style="width:4%;">NO.</th>
+              <th class="skill-col">COMPETENCY</th>
+              <th class="level-col">BASIC</th>
+              <th class="level-col">INTERMEDIATE</th>
+              <th class="level-col">ADVANCED</th>
+              <th class="level-col">SUPERIOR</th>
+              <th style="width:4%;"></th>
+            </tr>
+          </thead>
+          <tbody id="skill-body">
+            {% for i in "1234567890" %}
+            <tr>
+              <td style="text-align:center;color:var(--text-muted);">{{ forloop.counter }}</td>
+              <td class="skill-col">
+                <select name="competency_{{ forloop.counter }}">
+                  <option value="">— Select Competency —</option>
+                  {% for group in comp_groups %}
+                  <optgroup label="{{ group.label }}">
+                    {% for comp in group.items %}
+                    <option value="{{ comp.pk }}">{{ comp.name }}</option>
+                    {% endfor %}
+                  </optgroup>
+                  {% endfor %}
+                </select>
+              </td>
+              <td class="level-col"><input type="radio" name="skill_level_{{ forloop.counter }}" value="basic"></td>
+              <td class="level-col"><input type="radio" name="skill_level_{{ forloop.counter }}" value="intermediate"></td>
+              <td class="level-col"><input type="radio" name="skill_level_{{ forloop.counter }}" value="advanced"></td>
+              <td class="level-col"><input type="radio" name="skill_level_{{ forloop.counter }}" value="superior"></td>
+              <td><button type="button" class="remove-row-btn" onclick="removeSkillRow(this)"><i class="fas fa-times"></i></button></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <button type="button" class="add-row-btn" onclick="addSkillRow()">
+          <i class="fas fa-plus"></i> Add Row
+        </button>
+      </div>
+      {% else %}
+      <div style="padding:14px 16px;border-bottom:2px solid var(--border);background:#fffbeb;display:flex;align-items:center;gap:10px;font-size:13px;color:#92400e;">
+        <i class="fas fa-lock" style="font-size:16px;"></i>
+        <span>This section is filled by the <strong>immediate supervisor or division head</strong> after the form is submitted. It will not be editable here.</span>
+      </div>
+      {% endif %}
+
+      <!-- Tools and Equipment -->
+      <div class="jaf-section-header">TOOLS AND EQUIPMENT</div>
+      <div class="jaf-section-sub">List any tools, equipment, or software regularly used.</div>
+      <div style="padding:14px;border-bottom:2px solid var(--border);">
+        <table class="tool-table" id="tool-table">
+          <thead>
+            <tr>
+              <th style="width:8%;">NO.</th>
+              <th>TOOL / EQUIPMENT / SOFTWARE</th>
+              <th style="width:5%;"></th>
+            </tr>
+          </thead>
+          <tbody id="tool-body">
+            {% if tools %}
+              {% for t in tools %}
+              <tr>
+                <td style="text-align:center;color:var(--text-muted);">{{ forloop.counter }}</td>
+                <td><input type="text" name="tool_{{ forloop.counter }}" value="{{ t.name }}" placeholder="e.g. Microsoft Excel, Document Management System…"></td>
+                <td><button type="button" class="remove-row-btn" onclick="removeToolRow(this)"><i class="fas fa-times"></i></button></td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              {% for i in "12345" %}
+              <tr>
+                <td style="text-align:center;color:var(--text-muted);">{{ forloop.counter }}</td>
+                <td><input type="text" name="tool_{{ forloop.counter }}" placeholder="e.g. Microsoft Excel, Document Management System…"></td>
+                <td><button type="button" class="remove-row-btn" onclick="removeToolRow(this)"><i class="fas fa-times"></i></button></td>
+              </tr>
+              {% endfor %}
+            {% endif %}
+          </tbody>
+        </table>
+        <button type="button" class="add-row-btn" onclick="addToolRow()">
+          <i class="fas fa-plus"></i> Add Row
+        </button>
+      </div>
+
+      <!-- Challenges and Critical Issues -->
+      <div class="jaf-section-header">CHALLENGES AND CRITICAL ISSUES</div>
+      <div class="jaf-section-sub">What are the most challenging aspects of this job?</div>
+      <div style="padding:10px 14px;border-bottom:2px solid var(--border);">
+        <textarea name="challenges_critical_issues" class="form-control" rows="4"
+          placeholder="Describe the most challenging aspects of this position…">{{ entry.challenges_critical_issues|default:'' }}</textarea>
+      </div>
+
+      <!-- Additional Comments -->
+      <div class="jaf-section-header">ADDITIONAL COMMENTS</div>
+      <div style="padding:10px 14px;border-bottom:2px solid var(--border);">
+        <textarea name="additional_comments" class="form-control" rows="3"
+          placeholder="Any additional information or comments…">{{ entry.additional_comments|default:'' }}</textarea>
+        <small style="font-size:12px;color:var(--text-muted);">Note: You may incorporate additional rows beyond the provided minimum.</small>
+      </div>
+
+      <!-- Certification note -->
+      <div style="padding:12px 16px;font-size:13px;color:var(--text-secondary);border-bottom:1px solid var(--border);background:#f8fafc;">
+        I hereby certify that all information and statements provided herewith are accurate. I further attest that these details truthfully reflect my current knowledge and understanding.
+      </div>
+
+      <!-- Action buttons -->
+      <div style="padding:16px;display:flex;gap:12px;flex-wrap:wrap;">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i> Save as Draft
+        </button>
+        {% if entry %}
+        <a href="{% url 'jaf_detail' pk=entry.pk %}" class="btn btn-outline">Cancel</a>
+        {% else %}
+        <a href="{% url 'jaf_list' %}" class="btn btn-outline">Cancel</a>
+        {% endif %}
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+// ── Dynamic row counters ───────────────────────────────────────────────────────
+let dutyCount  = document.querySelectorAll('#duty-body tr').length;
+let skillCount = document.querySelectorAll('#skill-body tr').length;
+let toolCount  = document.querySelectorAll('#tool-body tr').length;
+
+function renumberRows(tbody) {
+  Array.from(tbody.querySelectorAll('tr')).forEach(function(tr, idx) {
+    tr.querySelector('td:first-child').textContent = idx + 1;
+  });
+}
+
+function addDutyRow() {
+  dutyCount++;
+  const n = dutyCount;
+  const tbody = document.getElementById('duty-body');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="text-align:center;color:var(--text-muted);">${tbody.rows.length + 1}</td>
+    <td class="task-col"><input type="text" name="task_${n}" placeholder="Describe task…"></td>
+    <td class="freq-col"><input type="radio" name="freq_${n}" value="daily"></td>
+    <td class="freq-col"><input type="radio" name="freq_${n}" value="weekly"></td>
+    <td class="freq-col"><input type="radio" name="freq_${n}" value="monthly"></td>
+    <td class="freq-col"><input type="radio" name="freq_${n}" value="quarterly"></td>
+    <td class="freq-col"><input type="radio" name="freq_${n}" value="periodically"></td>
+    <td><button type="button" class="remove-row-btn" onclick="removeDutyRow(this)"><i class="fas fa-times"></i></button></td>`;
+  tbody.appendChild(tr);
+}
+
+function removeDutyRow(btn) {
+  btn.closest('tr').remove();
+  renumberRows(document.getElementById('duty-body'));
+}
+
+
+// Capture competency options from first rendered select (supervisor mode only)
+const _firstSkillSelect = document.querySelector('#skill-body select');
+const COMPETENCY_OPTIONS_HTML = _firstSkillSelect ? _firstSkillSelect.innerHTML : '';
+
+function addSkillRow() {
+  skillCount++;
+  const n = skillCount;
+  const tbody = document.getElementById('skill-body');
+  if (!tbody) return;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="text-align:center;color:var(--text-muted);">${tbody.rows.length + 1}</td>
+    <td class="skill-col"><select name="competency_${n}">${COMPETENCY_OPTIONS_HTML}</select></td>
+    <td class="level-col"><input type="radio" name="skill_level_${n}" value="basic"></td>
+    <td class="level-col"><input type="radio" name="skill_level_${n}" value="intermediate"></td>
+    <td class="level-col"><input type="radio" name="skill_level_${n}" value="advanced"></td>
+    <td class="level-col"><input type="radio" name="skill_level_${n}" value="superior"></td>
+    <td><button type="button" class="remove-row-btn" onclick="removeSkillRow(this)"><i class="fas fa-times"></i></button></td>`;
+  tbody.appendChild(tr);
+}
+
+function removeSkillRow(btn) {
+  btn.closest('tr').remove();
+  renumberRows(document.getElementById('skill-body'));
+}
+
+function addToolRow() {
+  toolCount++;
+  const n = toolCount;
+  const tbody = document.getElementById('tool-body');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="text-align:center;color:var(--text-muted);">${tbody.rows.length + 1}</td>
+    <td><input type="text" name="tool_${n}" placeholder="e.g. Microsoft Excel, Document Management System…"></td>
+    <td><button type="button" class="remove-row-btn" onclick="removeToolRow(this)"><i class="fas fa-times"></i></button></td>`;
+  tbody.appendChild(tr);
+}
+
+function removeToolRow(btn) {
+  btn.closest('tr').remove();
+  renumberRows(document.getElementById('tool-body'));
+}
+
+// ── Re-index field names before submit so the view reads them in order ─────────
+document.getElementById('jaf-form').addEventListener('submit', function() {
+  // Duty rows
+  const dutyRows = document.querySelectorAll('#duty-body tr');
+  dutyRows.forEach(function(tr, idx) {
+    const n = idx + 1;
+    const taskInput = tr.querySelector('input[type=text]');
+    if (taskInput) taskInput.name = 'task_' + n;
+    tr.querySelectorAll('input[type=radio]').forEach(function(radio) {
+      radio.name = 'freq_' + n;
+    });
+  });
+  // Skill rows (supervisor mode)
+  document.querySelectorAll('#skill-body tr').forEach(function(tr, idx) {
+    const n = idx + 1;
+    const sel = tr.querySelector('select');
+    if (sel) sel.name = 'competency_' + n;
+    tr.querySelectorAll('input[type=radio]').forEach(function(r) { r.name = 'skill_level_' + n; });
+  });
+  // Tool rows
+  const toolRows = document.querySelectorAll('#tool-body tr');
+  toolRows.forEach(function(tr, idx) {
+    const n = idx + 1;
+    const toolInput = tr.querySelector('input[type=text]');
+    if (toolInput) toolInput.name = 'tool_' + n;
+  });
+});
+</script>
+{% endblock %}

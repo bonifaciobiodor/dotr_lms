@@ -1,0 +1,42 @@
+{% extends 'base/base.html' %}
+{% block title %}Individual Development Plans{% endblock %}
+{% block page_title %}Individual Development Plans (IDP){% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+  <p style="color:var(--text-muted);">CSC-mandated Individual Development Plan for career growth</p>
+  <a href="{% url 'idp_create' %}" class="btn btn-gold"><i class="fas fa-plus"></i> Create IDP</a>
+</div>
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Employee</th><th>Year</th><th>Status</th><th>Career Objective</th><th>Approved By</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% for idp in idps %}
+        <tr>
+          <td style="font-weight:600;">{{ idp.user.get_full_name }}</td>
+          <td><span style="font-family:'DM Mono',monospace;font-weight:700;font-size:15px;">{{ idp.year }}</span></td>
+          <td>
+            {% if idp.status == 'approved' %}<span class="badge badge-green">Approved</span>
+            {% elif idp.status == 'completed' %}<span class="badge badge-blue">Completed</span>
+            {% elif idp.status == 'submitted' %}<span class="badge badge-gold">Submitted</span>
+            {% else %}<span class="badge badge-gray">Draft</span>{% endif %}
+          </td>
+          <td style="font-size:13px;color:var(--text-secondary);max-width:200px;">{{ idp.career_objective|truncatechars:80|default:"—" }}</td>
+          <td style="font-size:13px;">{{ idp.approved_by.get_full_name|default:"Pending" }}</td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'idp_detail' pk=idp.pk %}" class="btn btn-outline btn-sm"><i class="fas fa-eye"></i> View</a>
+              {% if user.role in 'admin,hr,supervisor' and idp.status == 'submitted' %}
+              <a href="{% url 'idp_approve' pk=idp.pk %}" class="btn btn-success btn-sm"><i class="fas fa-check"></i> Approve</a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6"><div class="empty-state"><i class="fas fa-route"></i><p>No IDPs found. <a href="{% url 'idp_create' %}">Create your IDP →</a></p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

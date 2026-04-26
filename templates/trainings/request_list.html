@@ -1,0 +1,776 @@
+{% extends 'base/base.html' %}
+{% block title %}Training Requests{% endblock %}
+{% block page_title %}Training Requests{% endblock %}
+{% block content %}
+
+{% if user.role in 'admin,hr' %}
+<!-- Tab Bar (admin / hr only) -->
+<div style="display:flex;gap:4px;margin-bottom:20px;border-bottom:2px solid var(--border);padding-bottom:0;">
+  <button id="tab-btn-active" onclick="switchTab('active')"
+    style="border:none;background:none;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;border-bottom:3px solid var(--dotr-blue);color:var(--dotr-blue);margin-bottom:-2px;">
+    <i class="fas fa-inbox" style="margin-right:6px;"></i>Active
+    <span class="badge badge-blue" style="margin-left:6px;font-size:11px;">{{ requests|length }}</span>
+  </button>
+  <button id="tab-btn-rejected" onclick="switchTab('rejected')"
+    style="border:none;background:none;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;color:var(--text-muted);margin-bottom:-2px;">
+    <i class="fas fa-times-circle" style="margin-right:6px;"></i>Rejected
+    <span class="badge badge-red" style="margin-left:6px;font-size:11px;">{{ rejected_requests|length }}</span>
+  </button>
+  <button id="tab-btn-cancelled" onclick="switchTab('cancelled')"
+    style="border:none;background:none;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;color:var(--text-muted);margin-bottom:-2px;">
+    <i class="fas fa-ban" style="margin-right:6px;"></i>Cancelled
+    <span class="badge badge-gray" style="margin-left:6px;font-size:11px;">{{ cancelled_requests|length }}</span>
+  </button>
+</div>
+{% endif %}
+
+<!-- ══ TAB: Active Requests ══ -->
+<div id="tab-active">
+<div class="card">
+  <div class="card-header">
+    <h3><i class="fas fa-paper-plane" style="color:var(--dotr-blue-light);margin-right:8px;"></i>
+      {% if user.role in 'admin,hr' %}Active Training Requests{% else %}Training Requests{% endif %}
+    </h3>
+    <span class="badge badge-blue">{{ requests|length }} request{{ requests|length|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Training</th>
+          <th>Justification</th>
+          <th>Submitted</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in requests %}
+        <tr>
+          <!-- Employee -->
+          <td>
+            <div style="font-weight:600;font-size:13.5px;">{{ req.requester.get_full_name }}</div>
+            <div style="font-size:12px;color:var(--text-muted);">{{ req.requester.division|default:"—" }}</div>
+          </td>
+
+          <!-- Training -->
+          <td>
+            <div style="font-weight:500;font-size:13px;">{{ req.training.title|truncatechars:45 }}</div>
+            <div style="margin-top:3px;">
+              <span class="badge {% if req.training.training_type == 'mandatory' %}badge-red{% elif req.training.training_type == 'specialized' %}badge-purple{% else %}badge-blue{% endif %}" style="font-size:10px;">
+                {{ req.training.get_training_type_display }}
+              </span>
+            </div>
+          </td>
+
+          <!-- Justification -->
+          <td style="max-width:180px;">
+            <div style="font-size:12.5px;color:var(--text-secondary);">{{ req.justification|truncatechars:70 }}</div>
+            {% if req.justification|length > 70 or req.supervisor_remarks or req.hr_remarks %}
+            <button type="button"
+              onclick="openJustificationModal(
+                '{{ req.requester.get_full_name|escapejs }}',
+                '{{ req.justification|escapejs }}',
+                '{{ req.supervisor_remarks|escapejs }}',
+                '{{ req.hr_remarks|escapejs }}'
+              )"
+              style="margin-top:4px;border:none;background:none;padding:0;cursor:pointer;font-size:12px;color:var(--dotr-blue-light);font-weight:600;">
+              <i class="fas fa-expand-alt"></i> Read more
+            </button>
+            {% endif %}
+          </td>
+
+          <!-- Date -->
+          <td style="font-size:12.5px;color:var(--text-muted);white-space:nowrap;">
+            {{ req.created_at|date:"M d, Y" }}
+          </td>
+
+          <!-- Status -->
+          <td>
+            {% if req.status == 'approved' %}
+              <span class="badge badge-green"><i class="fas fa-check-circle"></i> Approved</span>
+            {% elif req.status == 'rejected' %}
+              <span class="badge badge-red"><i class="fas fa-times-circle"></i> Rejected</span>
+              {% with reason=req.supervisor_remarks|default:req.hr_remarks %}
+              {% if reason %}
+              <div style="margin-top:5px;font-size:11.5px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:5px;padding:5px 8px;max-width:160px;">
+                <i class="fas fa-comment-alt" style="margin-right:4px;"></i>{{ reason|truncatechars:80 }}
+                {% if reason|length > 80 %}
+                <button type="button"
+                  onclick="openJustificationModal(
+                    '{{ req.requester.get_full_name|escapejs }}',
+                    '{{ req.justification|escapejs }}',
+                    '{{ req.supervisor_remarks|escapejs }}',
+                    '{{ req.hr_remarks|escapejs }}'
+                  )"
+                  style="border:none;background:none;padding:0;cursor:pointer;font-size:11px;color:#b91c1c;font-weight:600;">more</button>
+                {% endif %}
+              </div>
+              {% endif %}
+              {% endwith %}
+            {% elif req.status == 'cancelled' %}
+              <span class="badge badge-gray"><i class="fas fa-ban"></i> Cancelled</span>
+            {% elif req.status == 'draft' %}
+              <span class="badge badge-gray"><i class="fas fa-file-alt"></i> Draft</span>
+            {% elif req.status == 'pending' %}
+              <span class="badge badge-gold"><i class="fas fa-clock"></i> Submitted to Supervisor</span>
+            {% elif req.status == 'supervisor_review' %}
+              <span class="badge badge-gold"><i class="fas fa-user-clock"></i> Under Supervisor Review</span>
+            {% elif req.status == 'pending_hrdd' %}
+              <span class="badge badge-blue"><i class="fas fa-paper-plane"></i> Submitted to HRDD</span>
+              {% if req.supervisor_remarks %}
+              <div style="margin-top:5px;font-size:11.5px;color:#1e40af;background:#eff6ff;border:1px solid #bfdbfe;border-radius:5px;padding:5px 8px;max-width:160px;">
+                <i class="fas fa-user-tie" style="margin-right:4px;"></i>{{ req.supervisor_remarks|truncatechars:60 }}
+              </div>
+              {% endif %}
+            {% elif req.status == 'hrdd_review' %}
+              <span class="badge badge-purple"><i class="fas fa-search"></i> Under HRDD Review</span>
+            {% else %}
+              <span class="badge badge-gray">{{ req.get_status_display }}</span>
+            {% endif %}
+          </td>
+
+          <!-- Actions -->
+          <td>
+
+            {# ── Employee: submit draft ── #}
+            {% if req.status == 'draft' and req.requester == user %}
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <form method="post" action="{% url 'training_request_action' pk=req.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="submit">
+                <button type="submit" class="btn btn-primary btn-sm">
+                  <i class="fas fa-paper-plane"></i> Submit
+                </button>
+              </form>
+              <form method="post" action="{% url 'training_request_action' pk=req.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="cancel">
+                <button type="submit" class="btn btn-sm" style="background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;" onclick="return confirm('Delete this draft?')">
+                  <i class="fas fa-trash"></i> Delete
+                </button>
+              </form>
+            </div>
+
+            {# ── Employee: cancel pending ── #}
+            {% elif req.status == 'pending' and req.requester == user %}
+            <form method="post" action="{% url 'training_request_action' pk=req.pk %}">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="cancel">
+              <button type="submit" class="btn btn-sm" style="background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;" onclick="return confirm('Cancel this request?')">
+                <i class="fas fa-times"></i> Cancel
+              </button>
+            </form>
+
+            {# ── Supervisor: start review ── #}
+            {% elif req.status == 'pending' and user.role == 'supervisor' %}
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <form method="post" action="{% url 'training_request_action' pk=req.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="review">
+                <button type="submit" class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;">
+                  <i class="fas fa-eye"></i> Start Review
+                </button>
+              </form>
+              <form method="post" action="{% url 'training_request_action' pk=req.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="forward">
+                <input type="hidden" name="remarks" id="forward-remarks-{{ req.pk }}">
+                <button type="button" class="btn btn-success btn-sm"
+                  onclick="openActionModal(
+                    '{% url 'training_request_action' pk=req.pk %}',
+                    'forward',
+                    'Forward to HRDD',
+                    'Add an optional remark or recommendation before forwarding this request to HRDD.',
+                    'Supervisor\'s Remarks (optional)',
+                    'Briefly explain your endorsement or any notes for HRDD.',
+                    'btn-success', '<i class=\'fas fa-share\'></i>&nbsp;Forward to HRDD',
+                    false
+                  )">
+                  <i class="fas fa-share"></i> Forward to HRDD
+                </button>
+              </form>
+              <button type="button" class="btn btn-danger btn-sm"
+                onclick="openActionModal(
+                  '{% url 'training_request_action' pk=req.pk %}',
+                  'reject',
+                  'Reject Training Request',
+                  'Please provide a rejection statement. This will be visible to the employee.',
+                  'Rejection Statement *',
+                  'State the reason clearly so the employee understands the basis for rejection.',
+                  'btn-danger', '<i class=\'fas fa-times-circle\'></i>&nbsp;Confirm Rejection',
+                  true
+                )">
+                <i class="fas fa-times"></i> Reject
+              </button>
+            </div>
+
+            {# ── Supervisor: under review — forward or reject ── #}
+            {% elif req.status == 'supervisor_review' and user.role == 'supervisor' %}
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button type="button" class="btn btn-success btn-sm"
+                onclick="openActionModal(
+                  '{% url 'training_request_action' pk=req.pk %}',
+                  'forward',
+                  'Forward to HRDD',
+                  'Add an optional remark or recommendation before forwarding this request to HRDD.',
+                  'Supervisor\'s Remarks (optional)',
+                  'Briefly explain your endorsement or any notes for HRDD.',
+                  'btn-success', '<i class=\'fas fa-share\'></i>&nbsp;Forward to HRDD',
+                  false
+                )">
+                <i class="fas fa-share"></i> Forward to HRDD
+              </button>
+              <button type="button" class="btn btn-danger btn-sm"
+                onclick="openActionModal(
+                  '{% url 'training_request_action' pk=req.pk %}',
+                  'reject',
+                  'Reject Training Request',
+                  'Please provide a rejection statement. This will be visible to the employee.',
+                  'Rejection Statement *',
+                  'State the reason clearly so the employee understands the basis for rejection.',
+                  'btn-danger', '<i class=\'fas fa-times-circle\'></i>&nbsp;Confirm Rejection',
+                  true
+                )">
+                <i class="fas fa-times"></i> Reject
+              </button>
+            </div>
+
+            {# ── HRDD: start review ── #}
+            {% elif req.status == 'pending_hrdd' and user.role == 'hr' %}
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <form method="post" action="{% url 'training_request_action' pk=req.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="review">
+                <button type="submit" class="btn btn-sm" style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;">
+                  <i class="fas fa-search"></i> Start Review
+                </button>
+              </form>
+              <button type="button" class="btn btn-success btn-sm"
+                onclick="openActionModal(
+                  '{% url 'training_request_action' pk=req.pk %}',
+                  'approve',
+                  'Approve & Enroll',
+                  'Optionally add an approval note before enrolling this employee.',
+                  'HRDD Remarks (optional)',
+                  'You may note any conditions, instructions, or general comments.',
+                  'btn-success', '<i class=\'fas fa-check\'></i>&nbsp;Approve &amp; Enroll',
+                  false
+                )">
+                <i class="fas fa-check"></i> Approve &amp; Enroll
+              </button>
+              <button type="button" class="btn btn-danger btn-sm"
+                onclick="openActionModal(
+                  '{% url 'training_request_action' pk=req.pk %}',
+                  'reject',
+                  'Reject Training Request',
+                  'Please provide a rejection statement. This will be visible to the employee.',
+                  'Rejection Statement *',
+                  'State the reason clearly so the employee understands the basis for rejection.',
+                  'btn-danger', '<i class=\'fas fa-times-circle\'></i>&nbsp;Confirm Rejection',
+                  true
+                )">
+                <i class="fas fa-times"></i> Reject
+              </button>
+            </div>
+
+            {# ── HRDD: under review — approve or reject ── #}
+            {% elif req.status == 'hrdd_review' and user.role == 'hr' %}
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button type="button" class="btn btn-success btn-sm"
+                onclick="openActionModal(
+                  '{% url 'training_request_action' pk=req.pk %}',
+                  'approve',
+                  'Approve & Enroll',
+                  'Optionally add an approval note before enrolling this employee.',
+                  'HRDD Remarks (optional)',
+                  'You may note any conditions, instructions, or general comments.',
+                  'btn-success', '<i class=\'fas fa-check\'></i>&nbsp;Approve &amp; Enroll',
+                  false
+                )">
+                <i class="fas fa-check"></i> Approve &amp; Enroll
+              </button>
+              <button type="button" class="btn btn-danger btn-sm"
+                onclick="openActionModal(
+                  '{% url 'training_request_action' pk=req.pk %}',
+                  'reject',
+                  'Reject Training Request',
+                  'Please provide a rejection statement. This will be visible to the employee.',
+                  'Rejection Statement *',
+                  'State the reason clearly so the employee understands the basis for rejection.',
+                  'btn-danger', '<i class=\'fas fa-times-circle\'></i>&nbsp;Confirm Rejection',
+                  true
+                )">
+                <i class="fas fa-times"></i> Reject
+              </button>
+            </div>
+
+            {# ── Admin: can approve/reject at any active stage ── #}
+            {% elif user.role == 'admin' and req.status not in 'approved,rejected,cancelled' %}
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button type="button" class="btn btn-success btn-sm"
+                onclick="openActionModal(
+                  '{% url 'training_request_action' pk=req.pk %}',
+                  'approve',
+                  'Approve & Enroll',
+                  'Optionally add an approval note before enrolling this employee.',
+                  'Admin Remarks (optional)',
+                  'You may note any conditions, instructions, or general comments.',
+                  'btn-success', '<i class=\'fas fa-check\'></i>&nbsp;Approve',
+                  false
+                )">
+                <i class="fas fa-check"></i> Approve
+              </button>
+              <button type="button" class="btn btn-danger btn-sm"
+                onclick="openActionModal(
+                  '{% url 'training_request_action' pk=req.pk %}',
+                  'reject',
+                  'Reject Training Request',
+                  'Please provide a rejection statement. This will be visible to the employee.',
+                  'Rejection Statement *',
+                  'State the reason clearly so the employee understands the basis for rejection.',
+                  'btn-danger', '<i class=\'fas fa-times-circle\'></i>&nbsp;Confirm Rejection',
+                  true
+                )">
+                <i class="fas fa-times"></i> Reject
+              </button>
+            </div>
+
+            {% elif req.status == 'approved' %}
+            <span style="font-size:12px;color:var(--success);">
+              <i class="fas fa-user-check"></i> Enrolled
+            </span>
+
+            {% else %}
+            <span style="font-size:12px;color:var(--text-muted);">—</span>
+            {% endif %}
+
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="empty-state" style="padding:50px;">
+              <i class="fas fa-inbox"></i>
+              <p>No training requests found.</p>
+              {% if user.role == 'employee' %}
+              <a href="{% url 'training_catalog' %}" class="btn btn-primary" style="margin-top:14px;">
+                <i class="fas fa-graduation-cap"></i> Browse Training Catalog
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /tab-active -->
+
+{% if user.role in 'admin,hr' %}
+
+<!-- ══ TAB: Rejected Requests ══ -->
+<div id="tab-rejected" style="display:none;">
+<div class="card">
+  <div class="card-header">
+    <h3><i class="fas fa-times-circle" style="color:#ef4444;margin-right:8px;"></i>Rejected Training Requests</h3>
+    <span class="badge badge-red">{{ rejected_requests|length }} request{{ rejected_requests|length|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Training</th>
+          <th>Justification</th>
+          <th>Submitted</th>
+          <th>Rejected By</th>
+          <th>Rejection Statement</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in rejected_requests %}
+        <tr>
+          <td>
+            <div style="font-weight:600;font-size:13.5px;">{{ req.requester.get_full_name }}</div>
+            <div style="font-size:12px;color:var(--text-muted);">{{ req.requester.division|default:"—" }}</div>
+          </td>
+          <td>
+            <div style="font-weight:500;font-size:13px;">{{ req.training.title|truncatechars:45 }}</div>
+            <div style="margin-top:3px;">
+              <span class="badge {% if req.training.training_type == 'mandatory' %}badge-red{% elif req.training.training_type == 'specialized' %}badge-purple{% else %}badge-blue{% endif %}" style="font-size:10px;">
+                {{ req.training.get_training_type_display }}
+              </span>
+            </div>
+          </td>
+          <td style="max-width:160px;">
+            <div style="font-size:12.5px;color:var(--text-secondary);">{{ req.justification|truncatechars:60 }}</div>
+            {% if req.justification|length > 60 %}
+            <button type="button"
+              onclick="openJustificationModal('{{ req.requester.get_full_name|escapejs }}','{{ req.justification|escapejs }}','{{ req.supervisor_remarks|escapejs }}','{{ req.hr_remarks|escapejs }}')"
+              style="margin-top:4px;border:none;background:none;padding:0;cursor:pointer;font-size:12px;color:var(--dotr-blue-light);font-weight:600;">
+              <i class="fas fa-expand-alt"></i> Read more
+            </button>
+            {% endif %}
+          </td>
+          <td style="font-size:12.5px;color:var(--text-muted);white-space:nowrap;">
+            {{ req.created_at|date:"M d, Y" }}
+          </td>
+          <td>
+            {% if req.reviewed_by_supervisor %}
+            <div style="font-size:13px;font-weight:600;">{{ req.reviewed_by_supervisor.get_full_name }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">Supervisor</div>
+            {% elif req.reviewed_by_hr %}
+            <div style="font-size:13px;font-weight:600;">{{ req.reviewed_by_hr.get_full_name }}</div>
+            <div style="font-size:11px;color:var(--text-muted);">{% if req.reviewed_by_hr.role == 'admin' %}Admin{% else %}HRDD{% endif %}</div>
+            {% else %}
+            <span style="color:var(--text-muted);">—</span>
+            {% endif %}
+            {% if req.supervisor_review_date or req.hr_review_date %}
+            <div style="font-size:11px;color:var(--text-muted);">
+              {{ req.supervisor_review_date|default:req.hr_review_date|date:"M d, Y" }}
+            </div>
+            {% endif %}
+          </td>
+          <td style="max-width:200px;">
+            {% with reason=req.supervisor_remarks|default:req.hr_remarks %}
+            {% if reason %}
+            <div style="font-size:12.5px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:8px 10px;line-height:1.5;">
+              {{ reason|truncatechars:100 }}
+            </div>
+            {% if reason|length > 100 %}
+            <button type="button"
+              onclick="openJustificationModal('{{ req.requester.get_full_name|escapejs }}','{{ req.justification|escapejs }}','{{ req.supervisor_remarks|escapejs }}','{{ req.hr_remarks|escapejs }}')"
+              style="margin-top:4px;border:none;background:none;padding:0;cursor:pointer;font-size:12px;color:#b91c1c;font-weight:600;">
+              <i class="fas fa-expand-alt"></i> Read more
+            </button>
+            {% endif %}
+            {% else %}
+            <span style="font-size:12px;color:var(--text-muted);">No statement provided</span>
+            {% endif %}
+            {% endwith %}
+          </td>
+          <td>
+            <button type="button" class="btn btn-sm"
+              style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;"
+              onclick="openDeleteModal(
+                '{% url 'training_request_delete' pk=req.pk %}',
+                '{{ req.requester.get_full_name|escapejs }}',
+                '{{ req.training.title|escapejs }}'
+              )" title="Delete so employee can re-request">
+              <i class="fas fa-trash-alt"></i> Delete
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">
+            <div class="empty-state" style="padding:40px;">
+              <i class="fas fa-check-circle" style="color:var(--success);"></i>
+              <p>No rejected requests.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+</div><!-- /tab-rejected -->
+
+<!-- ══ TAB: Cancelled Requests ══ -->
+<div id="tab-cancelled" style="display:none;">
+<div class="card">
+  <div class="card-header">
+    <h3><i class="fas fa-ban" style="color:#94a3b8;margin-right:8px;"></i>Cancelled Training Requests</h3>
+    <span class="badge badge-gray">{{ cancelled_requests|length }} request{{ cancelled_requests|length|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Training</th>
+          <th>Justification</th>
+          <th>Submitted</th>
+          <th>Cancelled Date</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in cancelled_requests %}
+        <tr>
+          <td>
+            <div style="font-weight:600;font-size:13.5px;">{{ req.requester.get_full_name }}</div>
+            <div style="font-size:12px;color:var(--text-muted);">{{ req.requester.division|default:"—" }}</div>
+          </td>
+          <td>
+            <div style="font-weight:500;font-size:13px;">{{ req.training.title|truncatechars:45 }}</div>
+            <div style="margin-top:3px;">
+              <span class="badge {% if req.training.training_type == 'mandatory' %}badge-red{% elif req.training.training_type == 'specialized' %}badge-purple{% else %}badge-blue{% endif %}" style="font-size:10px;">
+                {{ req.training.get_training_type_display }}
+              </span>
+            </div>
+          </td>
+          <td style="max-width:180px;">
+            <div style="font-size:12.5px;color:var(--text-secondary);">{{ req.justification|truncatechars:70 }}</div>
+            {% if req.justification|length > 70 %}
+            <button type="button"
+              onclick="openJustificationModal('{{ req.requester.get_full_name|escapejs }}','{{ req.justification|escapejs }}','{{ req.supervisor_remarks|escapejs }}','{{ req.hr_remarks|escapejs }}')"
+              style="margin-top:4px;border:none;background:none;padding:0;cursor:pointer;font-size:12px;color:var(--dotr-blue-light);font-weight:600;">
+              <i class="fas fa-expand-alt"></i> Read more
+            </button>
+            {% endif %}
+          </td>
+          <td style="font-size:12.5px;color:var(--text-muted);white-space:nowrap;">
+            {{ req.created_at|date:"M d, Y" }}
+          </td>
+          <td style="font-size:12.5px;color:var(--text-muted);white-space:nowrap;">
+            {{ req.updated_at|date:"M d, Y" }}
+          </td>
+          <td>
+            <button type="button" class="btn btn-sm"
+              style="background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;"
+              onclick="openDeleteModal(
+                '{% url 'training_request_delete' pk=req.pk %}',
+                '{{ req.requester.get_full_name|escapejs }}',
+                '{{ req.training.title|escapejs }}'
+              )" title="Delete so employee can re-request">
+              <i class="fas fa-trash-alt"></i> Delete
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="empty-state" style="padding:40px;">
+              <i class="fas fa-check-circle" style="color:var(--success);"></i>
+              <p>No cancelled requests.</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+</div><!-- /tab-cancelled -->
+
+{% endif %}
+
+<!-- Workflow legend -->
+<div class="card" style="margin-top:16px;">
+  <div class="card-body" style="padding:14px 18px;">
+    <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Approval Workflow</div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--text-secondary);">
+      <span style="background:#f8fafc;border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-weight:600;">Employee's Draft</span>
+      <i class="fas fa-arrow-right" style="color:var(--text-muted);font-size:11px;"></i>
+      <span style="background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:4px 10px;font-weight:600;color:#92400e;">Submitted to Supervisor</span>
+      <i class="fas fa-arrow-right" style="color:var(--text-muted);font-size:11px;"></i>
+      <span style="background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:4px 10px;font-weight:600;color:#92400e;">Supervisor's Review</span>
+      <i class="fas fa-arrow-right" style="color:var(--text-muted);font-size:11px;"></i>
+      <span style="background:#dbeafe;border:1px solid #93c5fd;border-radius:6px;padding:4px 10px;font-weight:600;color:#1e40af;">Submitted to HRDD</span>
+      <i class="fas fa-arrow-right" style="color:var(--text-muted);font-size:11px;"></i>
+      <span style="background:#ede9fe;border:1px solid #c4b5fd;border-radius:6px;padding:4px 10px;font-weight:600;color:#5b21b6;">HRDD Review &amp; Approval</span>
+      <i class="fas fa-arrow-right" style="color:var(--text-muted);font-size:11px;"></i>
+      <span style="background:#d1fae5;border:1px solid #6ee7b7;border-radius:6px;padding:4px 10px;font-weight:600;color:#065f46;">Auto-Enrolled</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete Confirmation Modal ── -->
+<div id="delete-modal"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;"
+  onclick="if(event.target===this)closeModals()">
+  <div style="background:#fff;border-radius:14px;padding:28px 32px;max-width:460px;width:92%;box-shadow:0 24px 64px rgba(0,0,0,.2);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h3 style="font-size:16px;font-weight:700;color:#b91c1c;"><i class="fas fa-trash-alt" style="margin-right:8px;"></i>Delete Training Request</h3>
+      <button onclick="closeModals()" style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--text-muted);line-height:1;">&times;</button>
+    </div>
+    <p style="font-size:13.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:6px;">
+      You are about to permanently delete the training request by:
+    </p>
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
+      <div id="dm-employee" style="font-weight:700;font-size:14px;color:#b91c1c;"></div>
+      <div id="dm-training" style="font-size:13px;color:#7f1d1d;margin-top:2px;"></div>
+    </div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;">
+      <i class="fas fa-info-circle" style="color:var(--dotr-blue-light);margin-right:5px;"></i>
+      Once deleted, the employee will be able to re-submit a new request for this training.
+    </p>
+    <form id="dm-form" method="post">
+      {% csrf_token %}
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" onclick="closeModals()" class="btn btn-outline">Cancel</button>
+        <button type="submit" class="btn btn-danger"><i class="fas fa-trash-alt"></i> Confirm Delete</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Action Modal (Reject / Forward / Approve) ── -->
+<div id="action-modal"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;"
+  onclick="if(event.target===this)closeModals()">
+  <div style="background:#fff;border-radius:14px;padding:28px 32px;max-width:500px;width:92%;box-shadow:0 24px 64px rgba(0,0,0,.2);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <h3 id="am-title" style="font-size:16px;font-weight:700;color:var(--text-primary);"></h3>
+      <button onclick="closeModals()" style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--text-muted);line-height:1;">&times;</button>
+    </div>
+    <p id="am-desc" style="font-size:13px;color:var(--text-secondary);margin-bottom:18px;"></p>
+    <form id="am-form" method="post">
+      {% csrf_token %}
+      <input type="hidden" id="am-action" name="action">
+      <div class="form-group" style="margin-bottom:20px;">
+        <label id="am-label" class="form-label" style="font-weight:600;"></label>
+        <textarea id="am-remarks" name="remarks" class="form-control" rows="4"
+          placeholder="Enter your statement here..."></textarea>
+        <div id="am-hint" style="font-size:12px;color:var(--text-muted);margin-top:5px;"></div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button type="button" onclick="closeModals()" class="btn btn-outline">Cancel</button>
+        <button id="am-submit" type="submit" class="btn btn-danger"></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ── Justification Detail Modal ── -->
+<div id="justification-modal"
+  style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;"
+  onclick="if(event.target===this)closeModals()">
+  <div style="background:#fff;border-radius:14px;padding:28px 32px;max-width:540px;width:92%;box-shadow:0 24px 64px rgba(0,0,0,.2);max-height:80vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+      <h3 id="jm-name" style="font-size:16px;font-weight:700;color:var(--text-primary);"></h3>
+      <button onclick="closeModals()" style="border:none;background:none;cursor:pointer;font-size:20px;color:var(--text-muted);line-height:1;">&times;</button>
+    </div>
+
+    <!-- Employee Justification -->
+    <div style="margin-bottom:18px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-muted);margin-bottom:8px;">
+        <i class="fas fa-user" style="margin-right:5px;"></i>Employee's Justification
+      </div>
+      <div id="jm-justification"
+        style="font-size:13.5px;color:var(--text-primary);line-height:1.7;background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:14px;">
+      </div>
+    </div>
+
+    <!-- Supervisor Remarks (if any) -->
+    <div id="jm-supervisor-wrap" style="display:none;margin-bottom:18px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#92400e;margin-bottom:8px;">
+        <i class="fas fa-user-tie" style="margin-right:5px;"></i>Supervisor's Remarks
+      </div>
+      <div id="jm-supervisor"
+        style="font-size:13.5px;color:#78350f;line-height:1.7;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:14px;">
+      </div>
+    </div>
+
+    <!-- HR Remarks (if any) -->
+    <div id="jm-hr-wrap" style="display:none;margin-bottom:6px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#5b21b6;margin-bottom:8px;">
+        <i class="fas fa-building" style="margin-right:5px;"></i>HRDD Remarks
+      </div>
+      <div id="jm-hr"
+        style="font-size:13.5px;color:#4c1d95;line-height:1.7;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;padding:14px;">
+      </div>
+    </div>
+
+    <div style="text-align:right;margin-top:20px;">
+      <button onclick="closeModals()" class="btn btn-outline">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openActionModal(formAction, action, title, desc, labelText, hint, btnClass, btnHTML, isRequired) {
+  var m = document.getElementById('action-modal');
+  document.getElementById('am-form').action = formAction;
+  document.getElementById('am-action').value = action;
+  document.getElementById('am-title').textContent = title;
+  document.getElementById('am-desc').textContent = desc;
+  document.getElementById('am-label').textContent = labelText;
+  document.getElementById('am-hint').textContent = hint;
+  var btn = document.getElementById('am-submit');
+  btn.className = 'btn ' + btnClass;
+  btn.innerHTML = btnHTML;
+  var ta = document.getElementById('am-remarks');
+  ta.required = isRequired;
+  ta.value = '';
+  ta.placeholder = isRequired
+    ? 'Required — state your reason clearly...'
+    : 'Optional — add your remarks or notes here...';
+  m.style.display = 'flex';
+  setTimeout(function(){ ta.focus(); }, 100);
+}
+
+function openJustificationModal(name, justification, supervisorRemarks, hrRemarks) {
+  document.getElementById('jm-name').textContent = name + ' — Request Details';
+  document.getElementById('jm-justification').textContent = justification || '(No justification provided)';
+
+  var sw = document.getElementById('jm-supervisor-wrap');
+  var hw = document.getElementById('jm-hr-wrap');
+
+  if (supervisorRemarks) {
+    document.getElementById('jm-supervisor').textContent = supervisorRemarks;
+    sw.style.display = 'block';
+  } else {
+    sw.style.display = 'none';
+  }
+  if (hrRemarks) {
+    document.getElementById('jm-hr').textContent = hrRemarks;
+    hw.style.display = 'block';
+  } else {
+    hw.style.display = 'none';
+  }
+
+  document.getElementById('justification-modal').style.display = 'flex';
+}
+
+function openDeleteModal(formAction, employeeName, trainingTitle) {
+  document.getElementById('dm-form').action = formAction;
+  document.getElementById('dm-employee').textContent = employeeName;
+  document.getElementById('dm-training').textContent = trainingTitle;
+  document.getElementById('delete-modal').style.display = 'flex';
+}
+
+function closeModals() {
+  document.getElementById('delete-modal').style.display = 'none';
+  document.getElementById('action-modal').style.display = 'none';
+  document.getElementById('justification-modal').style.display = 'none';
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModals();
+});
+
+// ── Tab switching (admin / hr only) ──
+var TABS = ['active', 'rejected', 'cancelled'];
+var TAB_COLORS = { active: 'var(--dotr-blue)', rejected: '#ef4444', cancelled: '#94a3b8' };
+
+function switchTab(name) {
+  TABS.forEach(function(t) {
+    var panel = document.getElementById('tab-' + t);
+    var btn   = document.getElementById('tab-btn-' + t);
+    if (!panel || !btn) return;
+    var isActive = t === name;
+    panel.style.display = isActive ? 'block' : 'none';
+    btn.style.borderBottomColor = isActive ? TAB_COLORS[t] : 'transparent';
+    btn.style.color = isActive ? TAB_COLORS[t] : 'var(--text-muted)';
+  });
+  try { localStorage.setItem('req_list_tab', name); } catch(e) {}
+}
+
+(function () {
+  // Only init if tabs exist (admin/hr view)
+  if (!document.getElementById('tab-btn-active')) return;
+  var saved = 'active';
+  try { saved = localStorage.getItem('req_list_tab') || 'active'; } catch(e) {}
+  switchTab(saved);
+})();
+</script>
+
+{% endblock %}

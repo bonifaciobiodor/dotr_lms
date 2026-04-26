@@ -1,0 +1,115 @@
+{% extends 'base/base.html' %}
+{% block title %}JAF Store{% endblock %}
+{% block page_title %}JAF Store — Stored Job Analysis Forms{% endblock %}
+{% block content %}
+
+<div class="breadcrumb">
+  <a href="{% url 'jaf_list' %}">Job Analysis Forms</a>
+  <i class="fas fa-chevron-right" style="font-size:10px;"></i>
+  <span>Store</span>
+</div>
+
+<!-- Header row -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+  <div>
+    <p style="font-size:13px;color:var(--text-muted);margin:0;">
+      <i class="fas fa-folder-open" style="color:var(--dotr-gold);margin-right:5px;"></i>
+      Stored at: <code style="font-size:12px;background:#f1f5f9;padding:2px 6px;border-radius:4px;">media/jaf_store/</code>
+    </p>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    {% with total=0 %}
+    <span class="badge badge-blue">
+      <i class="fas fa-layer-group"></i>
+      {{ divisions|length }} Division{{ divisions|length|pluralize }}
+    </span>
+    {% endwith %}
+    <a href="{% url 'jaf_list' %}" class="btn btn-outline btn-sm">
+      <i class="fas fa-arrow-left"></i> Back to JAF List
+    </a>
+  </div>
+</div>
+
+{% if divisions %}
+  {% for div in divisions %}
+  <div class="card" style="margin-bottom:20px;">
+    <!-- Division header -->
+    <div class="card-header" style="background:linear-gradient(90deg,rgba(37,99,235,.06),transparent);border-bottom:2px solid var(--dotr-blue-light);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:8px;background:var(--dotr-blue-light);display:flex;align-items:center;justify-content:center;">
+          <i class="fas fa-folder-open" style="color:white;font-size:15px;"></i>
+        </div>
+        <div>
+          <h3 style="font-size:16px;font-weight:800;color:var(--dotr-blue-light);margin:0;">{{ div.folder }}</h3>
+          <div style="font-size:12px;color:var(--text-muted);">
+            {{ div.files|length }} stored file{{ div.files|length|pluralize }}
+          </div>
+        </div>
+      </div>
+      <span class="badge badge-blue" style="font-size:12px;">{{ div.files|length }}</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40px;">#</th>
+            <th>File Name</th>
+            <th style="width:110px;">Size</th>
+            <th style="width:180px;">Date Stored</th>
+            <th style="width:100px;text-align:center;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in div.files %}
+          <tr>
+            <td style="color:var(--text-muted);font-size:12px;">{{ forloop.counter }}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <i class="fas fa-file-code" style="color:var(--dotr-blue-light);font-size:14px;"></i>
+                <span style="font-size:13.5px;font-weight:600;color:var(--text-primary);">{{ f.name }}</span>
+              </div>
+            </td>
+            <td style="font-size:12.5px;color:var(--text-muted);">{{ f.size_kb }} KB</td>
+            <td style="font-size:12.5px;color:var(--text-muted);">
+              <i class="fas fa-clock" style="margin-right:4px;"></i>
+              {{ f.stored_at|date:"M d, Y" }}
+              <span style="color:var(--text-muted);margin-left:4px;">{{ f.stored_at|date:"g:i A" }}</span>
+            </td>
+            <td style="text-align:center;">
+              <a href="{{ f.url }}" target="_blank"
+                 class="btn btn-outline btn-sm" title="Open in new tab">
+                <i class="fas fa-eye"></i>
+              </a>
+              <a href="{{ f.url }}" download="{{ f.name }}"
+                 class="btn btn-sm btn-outline" style="margin-left:4px;" title="Download">
+                <i class="fas fa-download"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+
+{% else %}
+<div class="card">
+  <div class="card-body" style="text-align:center;padding:60px 40px;">
+    <div style="font-size:56px;margin-bottom:16px;color:var(--border);">
+      <i class="fas fa-archive"></i>
+    </div>
+    <h3 style="font-size:18px;font-weight:700;color:var(--text-muted);margin-bottom:8px;">No Stored JAFs Yet</h3>
+    <p style="color:var(--text-muted);font-size:13.5px;max-width:420px;margin:0 auto 20px;">
+      No Job Analysis Forms have been stored yet. Open an approved JAF and click
+      <strong>Store</strong> to archive it to the division folder.
+    </p>
+    <a href="{% url 'jaf_list' %}" class="btn btn-primary">
+      <i class="fas fa-file-alt"></i> Go to JAF List
+    </a>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

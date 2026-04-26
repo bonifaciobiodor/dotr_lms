@@ -1,0 +1,659 @@
+{% extends 'base/base.html' %}
+{% load static %}
+{% block title %}Org Structure Designer{% endblock %}
+{% block page_title %}Organizational Structure Designer{% endblock %}
+
+{% block extra_css %}
+<style>
+  .designer-wrap { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 1100px) { .designer-wrap { grid-template-columns: 1fr; } }
+
+  /* ── Palette panel ── */
+  .palette-panel { background: white; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; position: sticky; top: 80px; }
+  .panel-head { padding: 14px 18px; background: var(--dotr-blue); color: white; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .panel-body { padding: 16px; }
+  .panel-section { margin-bottom: 18px; }
+  .panel-section-title { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+
+  /* Division import list */
+  .div-import-list { max-height: 180px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+  .div-import-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; font-size: 12.5px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background .12s; }
+  .div-import-item:last-child { border-bottom: none; }
+  .div-import-item:hover { background: #f0f4f8; }
+  .div-import-item .code { font-size: 10px; font-weight: 700; color: var(--dotr-gold-dark); background: rgba(253,185,19,.15); padding: 1px 6px; border-radius: 99px; }
+
+  /* Add node form */
+  .add-node-form input, .add-node-form select { margin-bottom: 8px; }
+
+  /* ── Tree panel ── */
+  .tree-panel { background: white; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; min-height: 500px; }
+  .tree-toolbar { padding: 12px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  /* ── Sortable tree ── */
+  .sortable-tree { padding: 16px; }
+  .tree-empty { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+  .tree-empty i { font-size: 40px; opacity: .25; display: block; margin-bottom: 10px; }
+
+  ul.org-list { list-style: none; padding-left: 0; margin: 0; }
+  ul.org-list ul.org-list { padding-left: 28px; border-left: 2px dashed #e2e8f0; margin-left: 12px; margin-top: 4px; }
+
+  li.org-item { margin-bottom: 4px; }
+  .org-item-head {
+    display: flex; align-items: center; gap: 8px;
+    background: #f8fafc; border: 1.5px solid var(--border);
+    border-radius: 8px; padding: 8px 10px;
+    cursor: grab; user-select: none;
+    transition: background .12s, border-color .12s, box-shadow .12s;
+  }
+  .org-item-head:hover { background: #f0f4ff; border-color: var(--dotr-blue-light); }
+  .drag-handle { color: var(--text-muted); font-size: 13px; cursor: grab; flex-shrink: 0; }
+
+  .item-type-badge { font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 99px; text-transform: uppercase; letter-spacing: .4px; flex-shrink: 0; }
+  .type-office    { background: rgba(0,48,135,.1);  color: #003087; }
+  .type-bureau    { background: rgba(0,71,189,.1);  color: #0047BD; }
+  .type-service   { background: rgba(37,99,235,.1); color: #2563eb; }
+  .type-division  { background: rgba(253,185,19,.2);color: #92620c; }
+  .type-section   { background: rgba(16,185,129,.1);color: #059669; }
+  .type-unit      { background: rgba(139,92,246,.1);color: #7c3aed; }
+  .type-other     { background: #f1f5f9; color: var(--text-muted); }
+
+  .item-info { flex: 1; min-width: 0; }
+  .item-name { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item-sub  { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+  .item-employee-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(37,99,235,.08); border: 1px solid rgba(37,99,235,.18);
+    border-radius: 99px; padding: 2px 8px; font-size: 10.5px;
+    color: var(--dotr-blue-light); font-weight: 600; margin-top: 3px;
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .item-employee-chip i { font-size: 9px; }
+
+  .item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .item-btn { width: 26px; height: 26px; border-radius: 6px; border: 1.5px solid var(--border); background: white; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; transition: all .12s; }
+  .item-btn:hover { background: var(--dotr-blue-light); border-color: var(--dotr-blue-light); color: white; }
+  .item-btn.delete:hover { background: var(--danger); border-color: var(--danger); color: white; }
+  .item-btn.add-child:hover { background: var(--success); border-color: var(--success); color: white; }
+
+  .sortable-ghost { opacity: .4; }
+  .sortable-chosen { box-shadow: 0 4px 16px rgba(0,0,0,.15); }
+
+  /* ── Edit modal ── */
+  .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 900; align-items: center; justify-content: center; }
+  .modal-backdrop.open { display: flex; }
+  .modal-box { background: white; border-radius: 14px; width: 500px; max-width: 96vw; box-shadow: 0 12px 48px rgba(0,0,0,.2); overflow: hidden; }
+  .modal-header { padding: 16px 20px; background: var(--dotr-blue); color: white; display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h3 { font-size: 15px; font-weight: 700; }
+  .modal-close { background: none; border: none; color: white; font-size: 18px; cursor: pointer; opacity: .7; }
+  .modal-close:hover { opacity: 1; }
+  .modal-body { padding: 20px; max-height: 70vh; overflow-y: auto; }
+  .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+
+  /* Employee picker inside modal */
+  .emp-picker-wrap { position: relative; }
+  .emp-picker-input { cursor: pointer; }
+  .emp-dropdown {
+    display: none; position: absolute; top: 100%; left: 0; right: 0;
+    background: white; border: 1.5px solid var(--dotr-blue-light);
+    border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.12);
+    z-index: 1000; max-height: 220px; overflow-y: auto; margin-top: 4px;
+  }
+  .emp-dropdown.open { display: block; }
+  .emp-option {
+    padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--border);
+    transition: background .1s;
+  }
+  .emp-option:last-child { border-bottom: none; }
+  .emp-option:hover { background: #f0f4ff; }
+  .emp-option-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .emp-option-pos  { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .emp-option-id   { font-size: 10px; color: var(--dotr-gold-dark); font-family: monospace; }
+  .emp-clear { margin-top: 6px; font-size: 12px; color: var(--danger); cursor: pointer; }
+  .emp-clear:hover { text-decoration: underline; }
+
+  /* Save bar */
+  .save-bar { background: white; border-top: 1px solid var(--border); padding: 14px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: space-between; }
+  .save-bar .info { font-size: 12.5px; color: var(--text-muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{% url 'org_structure_view' %}">Org Structure</a>
+  <i class="fas fa-chevron-right" style="font-size:10px;"></i>
+  {% if instance %}<a href="{% url 'org_structure_history' %}">History</a>
+  <i class="fas fa-chevron-right" style="font-size:10px;"></i>
+  Edit{% else %}Design{% endif %}
+</div>
+
+<div class="designer-wrap">
+
+  <!-- ── LEFT: Palette ── -->
+  <div class="palette-panel">
+    <div class="panel-head"><i class="fas fa-cubes"></i> Components</div>
+    <div class="panel-body">
+
+      <div class="panel-section">
+        <div class="panel-section-title">Quick Add from Divisions</div>
+        <input type="text" class="form-control" id="div-search" placeholder="Search divisions…" style="margin-bottom:8px;">
+        <div class="div-import-list" id="div-list"></div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-section-title">Add Custom Node</div>
+        <div class="add-node-form">
+          <input type="text" class="form-control" id="new-name" placeholder="Office / Division name *">
+          <input type="text" class="form-control" id="new-abbr" placeholder="Abbreviation (e.g. HRDD)">
+          <select class="form-control" id="new-type">
+            <option value="office">Office</option>
+            <option value="bureau">Bureau</option>
+            <option value="service">Service</option>
+            <option value="division" selected>Division</option>
+            <option value="section">Section</option>
+            <option value="unit">Unit</option>
+            <option value="other">Other</option>
+          </select>
+          <button class="btn btn-primary" style="width:100%;" id="btn-add-root">
+            <i class="fas fa-plus"></i> Add to Root Level
+          </button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <div class="panel-section-title">Description / Notes</div>
+        <textarea class="form-control" id="os-description" placeholder="Optional notes…" rows="3">{% if instance %}{{ instance.description }}{% endif %}</textarea>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── RIGHT: Tree editor ── -->
+  <div class="tree-panel">
+    <div class="tree-toolbar">
+      <span style="font-size:14px;font-weight:700;color:var(--text-primary);flex:1;">
+        <i class="fas fa-sitemap" style="color:var(--dotr-blue-light);margin-right:6px;"></i>
+        Hierarchy Tree
+      </span>
+      <button class="btn btn-outline btn-sm" id="btn-collapse-all"><i class="fas fa-compress-arrows-alt"></i> Collapse</button>
+      <button class="btn btn-outline btn-sm" id="btn-expand-all"><i class="fas fa-expand-arrows-alt"></i> Expand</button>
+      <a href="{% url 'org_structure_history' %}" class="btn btn-outline btn-sm"><i class="fas fa-history"></i> History</a>
+    </div>
+
+    <div class="sortable-tree" id="tree-root-wrap">
+      <div class="tree-empty" id="tree-empty">
+        <i class="fas fa-sitemap"></i>
+        <p>No nodes yet. Add from the panel on the left.</p>
+      </div>
+      <ul class="org-list" id="root-list"></ul>
+    </div>
+
+    <div class="save-bar">
+      <span class="info" id="node-count-label">0 nodes</span>
+      <div style="display:flex;gap:8px;">
+        <a href="{% url 'org_structure_view' %}" class="btn btn-outline btn-sm">Cancel</a>
+        <button class="btn btn-gold" id="btn-save">
+          <i class="fas fa-save"></i> Save &amp; Set as Active
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit Node Modal ── -->
+<div class="modal-backdrop" id="edit-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3><i class="fas fa-edit" style="margin-right:6px;"></i> Edit Node</h3>
+      <button class="modal-close" id="modal-close-btn">&times;</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="form-grid" style="margin-bottom:0;">
+        <div class="form-group">
+          <label class="form-label">Unit / Office Name *</label>
+          <input type="text" class="form-control" id="edit-name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Abbreviation</label>
+          <input type="text" class="form-control" id="edit-abbr">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Unit Type</label>
+        <select class="form-control" id="edit-type">
+          <option value="office">Office</option>
+          <option value="bureau">Bureau</option>
+          <option value="service">Service</option>
+          <option value="division">Division</option>
+          <option value="section">Section</option>
+          <option value="unit">Unit</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+
+      <hr style="margin:14px 0;border-color:var(--border);">
+      <div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:12px;">
+        <i class="fas fa-user-tie" style="color:var(--dotr-blue-light);margin-right:5px;"></i>
+        Assign Head / Officer-in-Charge
+      </div>
+
+      <!-- Employee picker -->
+      <div class="form-group emp-picker-wrap" id="emp-picker-wrap">
+        <label class="form-label">Search Employee</label>
+        <input type="text" class="form-control emp-picker-input" id="emp-search"
+               placeholder="Type name or employee ID…" autocomplete="off">
+        <div class="emp-dropdown" id="emp-dropdown"></div>
+        <div id="emp-selected-display" style="display:none;margin-top:8px;">
+          <div class="item-employee-chip" id="emp-chip">
+            <i class="fas fa-user"></i>
+            <span id="emp-chip-text"></span>
+          </div>
+          <div class="emp-clear" id="emp-clear-btn">
+            <i class="fas fa-times-circle"></i> Remove assignment
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Head Position Title <span style="font-size:11px;color:var(--text-muted);">(auto-filled from employee, or enter manually)</span></label>
+        <input type="text" class="form-control" id="edit-head" placeholder="e.g. Director III">
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" id="modal-cancel-btn">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="modal-save-btn">Apply Changes</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  let nodeIdSeq = 1;
+  const nodes = {};
+
+  const DIVISIONS = {{ divisions_json|safe }};
+  const EMPLOYEES = {{ employees_json|safe }};
+  const INITIAL_TREE = {{ tree_json|safe }};
+
+  /* ── Import existing tree ── */
+  function importTree(treeArr, parentEl) {
+    treeArr.forEach(function(n) {
+      const id = addNode({
+        name: n.name,
+        abbreviation: n.abbreviation,
+        unit_type: n.unit_type,
+        head_position: n.head_position,
+        division_ref: n.division_ref,
+        head_user: n.head_user || null,
+      }, parentEl);
+      if (n.children && n.children.length) {
+        const li = document.getElementById('item-' + id);
+        const childUl = li ? li.querySelector(':scope > ul.org-list') : null;
+        if (childUl) importTree(n.children, childUl);
+      }
+    });
+  }
+
+  /* ── Escape HTML ── */
+  function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str || '';
+    return d.innerHTML;
+  }
+
+  /* ── Build li element ── */
+  function makeLi(node) {
+    const li = document.createElement('li');
+    li.className = 'org-item';
+    li.id = 'item-' + node.id;
+    li.dataset.nodeId = node.id;
+
+    const headDiv = document.createElement('div');
+    headDiv.className = 'org-item-head';
+    headDiv.innerHTML = buildHeadHTML(node);
+    li.appendChild(headDiv);
+
+    const childUl = document.createElement('ul');
+    childUl.className = 'org-list';
+    li.appendChild(childUl);
+
+    makeSortable(childUl);
+    return li;
+  }
+
+  function buildHeadHTML(node) {
+    const empChip = node.head_user
+      ? `<div class="item-employee-chip"><i class="fas fa-user"></i> ${esc(node.head_user.full_name)}`
+        + (node.head_user.position ? ` &mdash; <em>${esc(node.head_user.position)}</em>` : '')
+        + `</div>`
+      : (node.head_position ? `<div class="item-sub"><i class="fas fa-user" style="font-size:9px;"></i> ${esc(node.head_position)}</div>` : '');
+
+    return `
+      <span class="drag-handle"><i class="fas fa-grip-vertical"></i></span>
+      <span class="item-type-badge type-${node.unit_type}">${node.unit_type}</span>
+      <div class="item-info">
+        <div class="item-name">${esc(node.name)}${node.abbreviation ? ' <span style="font-weight:400;color:var(--text-muted);">(' + esc(node.abbreviation) + ')</span>' : ''}</div>
+        ${empChip}
+      </div>
+      <span class="item-actions">
+        <button class="item-btn add-child" title="Add child" data-action="add-child" data-id="${node.id}"><i class="fas fa-plus"></i></button>
+        <button class="item-btn" title="Edit" data-action="edit" data-id="${node.id}"><i class="fas fa-edit"></i></button>
+        <button class="item-btn delete" title="Remove" data-action="delete" data-id="${node.id}"><i class="fas fa-trash"></i></button>
+      </span>`;
+  }
+
+  /* ── Add node ── */
+  function addNode(data, parentUl) {
+    const id = nodeIdSeq++;
+    nodes[id] = Object.assign({ id, children: [] }, data);
+    const li = makeLi(nodes[id]);
+    parentUl.appendChild(li);
+    refreshEmpty();
+    updateCount();
+    return id;
+  }
+
+  function refreshEmpty() {
+    const rl = document.getElementById('root-list');
+    document.getElementById('tree-empty').style.display = rl.children.length === 0 ? 'block' : 'none';
+  }
+  function updateCount() {
+    const n = document.querySelectorAll('li.org-item').length;
+    document.getElementById('node-count-label').textContent = n + ' node' + (n !== 1 ? 's' : '');
+  }
+
+  function makeSortable(el) {
+    Sortable.create(el, {
+      group: 'org-nodes',
+      animation: 150,
+      handle: '.drag-handle',
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      fallbackOnBody: true,
+      swapThreshold: 0.65,
+      onEnd: updateCount,
+    });
+  }
+
+  /* ── Event delegation ── */
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    const id = parseInt(btn.dataset.id, 10);
+
+    if (action === 'delete') {
+      if (confirm('Remove this node and all its children?')) {
+        const li = document.getElementById('item-' + id);
+        if (li) li.remove();
+        delete nodes[id];
+        refreshEmpty();
+        updateCount();
+      }
+    } else if (action === 'edit') {
+      openEditModal(id);
+    } else if (action === 'add-child') {
+      const li = document.getElementById('item-' + id);
+      const childUl = li ? li.querySelector(':scope > ul.org-list') : null;
+      if (childUl) {
+        const name = prompt('Child node name:');
+        if (!name || !name.trim()) return;
+        addNode({ name: name.trim(), abbreviation: '', unit_type: 'division', head_position: '', division_ref: null, head_user: null }, childUl);
+      }
+    }
+  });
+
+  /* ════════════════════════════════════════════
+     EDIT MODAL
+  ════════════════════════════════════════════ */
+  let editTargetId = null;
+  let selectedEmployee = null;
+
+  function openEditModal(id) {
+    editTargetId = id;
+    const n = nodes[id];
+    if (!n) return;
+    document.getElementById('edit-name').value = n.name || '';
+    document.getElementById('edit-abbr').value = n.abbreviation || '';
+    document.getElementById('edit-type').value = n.unit_type || 'division';
+    document.getElementById('edit-head').value = n.head_position || '';
+    document.getElementById('emp-search').value = '';
+    document.getElementById('emp-dropdown').classList.remove('open');
+    document.getElementById('emp-dropdown').innerHTML = '';
+
+    selectedEmployee = n.head_user ? Object.assign({}, n.head_user) : null;
+    refreshEmpDisplay();
+    document.getElementById('edit-modal').classList.add('open');
+    document.getElementById('edit-name').focus();
+  }
+
+  function closeEditModal() {
+    document.getElementById('edit-modal').classList.remove('open');
+    editTargetId = null;
+    selectedEmployee = null;
+    document.getElementById('emp-search').value = '';
+    document.getElementById('emp-dropdown').classList.remove('open');
+  }
+
+  function refreshEmpDisplay() {
+    const display = document.getElementById('emp-selected-display');
+    const chip = document.getElementById('emp-chip-text');
+    if (selectedEmployee) {
+      display.style.display = 'block';
+      chip.textContent = selectedEmployee.full_name
+        + (selectedEmployee.position ? ' — ' + selectedEmployee.position : '');
+      // Auto-fill head_position if blank
+      if (!document.getElementById('edit-head').value) {
+        document.getElementById('edit-head').value = selectedEmployee.position || '';
+      }
+    } else {
+      display.style.display = 'none';
+    }
+  }
+
+  document.getElementById('modal-close-btn').addEventListener('click', closeEditModal);
+  document.getElementById('modal-cancel-btn').addEventListener('click', closeEditModal);
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeEditModal(); });
+
+  document.getElementById('emp-clear-btn').addEventListener('click', function() {
+    selectedEmployee = null;
+    document.getElementById('emp-search').value = '';
+    refreshEmpDisplay();
+  });
+
+  /* Employee search */
+  document.getElementById('emp-search').addEventListener('input', function() {
+    const q = this.value.toLowerCase().trim();
+    const dd = document.getElementById('emp-dropdown');
+    if (!q) { dd.classList.remove('open'); dd.innerHTML = ''; return; }
+
+    const matches = EMPLOYEES.filter(function(e) {
+      return e.full_name.toLowerCase().includes(q)
+        || (e.employee_id || '').toLowerCase().includes(q)
+        || (e.position || '').toLowerCase().includes(q);
+    }).slice(0, 20);
+
+    if (!matches.length) {
+      dd.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:var(--text-muted);">No employees found.</div>';
+    } else {
+      dd.innerHTML = matches.map(function(e) {
+        return `<div class="emp-option" data-emp-id="${e.id}">
+          <div class="emp-option-name">${esc(e.full_name)}</div>
+          <div style="display:flex;gap:8px;margin-top:2px;">
+            ${e.employee_id ? `<span class="emp-option-id">${esc(e.employee_id)}</span>` : ''}
+            ${e.position ? `<span class="emp-option-pos">${esc(e.position)}</span>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+    }
+    dd.classList.add('open');
+  });
+
+  document.getElementById('emp-dropdown').addEventListener('click', function(e) {
+    const opt = e.target.closest('.emp-option');
+    if (!opt) return;
+    const empId = parseInt(opt.dataset.empId, 10);
+    const emp = EMPLOYEES.find(function(e) { return e.id === empId; });
+    if (!emp) return;
+    selectedEmployee = {
+      id: emp.id,
+      full_name: emp.full_name,
+      position: emp.position || '',
+      employee_id: emp.employee_id || '',
+    };
+    document.getElementById('emp-search').value = '';
+    document.getElementById('emp-dropdown').classList.remove('open');
+    document.getElementById('emp-dropdown').innerHTML = '';
+    refreshEmpDisplay();
+  });
+
+  /* Close employee dropdown on outside click */
+  document.addEventListener('click', function(e) {
+    const wrap = document.getElementById('emp-picker-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+      document.getElementById('emp-dropdown').classList.remove('open');
+    }
+  });
+
+  /* Save modal */
+  document.getElementById('modal-save-btn').addEventListener('click', function() {
+    if (editTargetId === null) return;
+    const name = document.getElementById('edit-name').value.trim();
+    if (!name) { alert('Name is required.'); return; }
+    const n = nodes[editTargetId];
+    n.name = name;
+    n.abbreviation = document.getElementById('edit-abbr').value.trim();
+    n.unit_type = document.getElementById('edit-type').value;
+    n.head_position = document.getElementById('edit-head').value.trim();
+    n.head_user = selectedEmployee ? Object.assign({}, selectedEmployee) : null;
+    refreshLi(editTargetId);
+    closeEditModal();
+  });
+
+  function refreshLi(id) {
+    const n = nodes[id];
+    const li = document.getElementById('item-' + id);
+    if (!li) return;
+    li.querySelector('.org-item-head').innerHTML = buildHeadHTML(n);
+  }
+
+  /* ── Add root button ── */
+  document.getElementById('btn-add-root').addEventListener('click', function() {
+    const name = document.getElementById('new-name').value.trim();
+    if (!name) { alert('Name is required.'); document.getElementById('new-name').focus(); return; }
+    addNode({
+      name: name,
+      abbreviation: document.getElementById('new-abbr').value.trim(),
+      unit_type: document.getElementById('new-type').value,
+      head_position: '',
+      division_ref: null,
+      head_user: null,
+    }, document.getElementById('root-list'));
+    document.getElementById('new-name').value = '';
+    document.getElementById('new-abbr').value = '';
+  });
+
+  /* ── Collapse / Expand ── */
+  document.getElementById('btn-collapse-all').addEventListener('click', function() {
+    document.querySelectorAll('ul.org-list ul.org-list').forEach(function(ul) { ul.style.display = 'none'; });
+  });
+  document.getElementById('btn-expand-all').addEventListener('click', function() {
+    document.querySelectorAll('ul.org-list').forEach(function(ul) { ul.style.display = ''; });
+  });
+
+  /* ── Division import list ── */
+  function renderDivList(filter) {
+    const el = document.getElementById('div-list');
+    el.innerHTML = '';
+    const f = (filter || '').toLowerCase();
+    DIVISIONS.filter(function(d) {
+      return !f || d.name.toLowerCase().includes(f) || (d.code || '').toLowerCase().includes(f);
+    }).forEach(function(d) {
+      const item = document.createElement('div');
+      item.className = 'div-import-item';
+      item.innerHTML = `<span class="code">${esc(d.code || '')}</span><span>${esc(d.name)}</span>`;
+      item.addEventListener('click', function() {
+        addNode({ name: d.name, abbreviation: d.code || '', unit_type: 'division', head_position: '', division_ref: d.id, head_user: null },
+          document.getElementById('root-list'));
+      });
+      el.appendChild(item);
+    });
+    if (!el.children.length) {
+      el.innerHTML = '<div style="padding:12px;text-align:center;font-size:12px;color:var(--text-muted);">No divisions found.</div>';
+    }
+  }
+  renderDivList('');
+  document.getElementById('div-search').addEventListener('input', function() { renderDivList(this.value); });
+
+  /* ── Extract tree from DOM ── */
+  function extractTree(ul) {
+    const result = [];
+    Array.from(ul.children).forEach(function(li) {
+      const id = parseInt(li.dataset.nodeId, 10);
+      const n = nodes[id];
+      if (!n) return;
+      const childUl = li.querySelector(':scope > ul.org-list');
+      result.push({
+        name: n.name,
+        abbreviation: n.abbreviation || '',
+        unit_type: n.unit_type || 'division',
+        head_position: n.head_position || '',
+        division_ref: n.division_ref || null,
+        head_user: n.head_user || null,
+        children: childUl ? extractTree(childUl) : [],
+      });
+    });
+    return result;
+  }
+
+  /* ── Save ── */
+  document.getElementById('btn-save').addEventListener('click', function() {
+    const tree = extractTree(document.getElementById('root-list'));
+    if (!tree.length) { alert('Please add at least one node before saving.'); return; }
+    const description = document.getElementById('os-description').value.trim();
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+
+    fetch('{% url "org_structure_save" %}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content,
+      },
+      body: JSON.stringify({ tree: tree, description: description }),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        window.location.href = '{% url "org_structure_view" %}';
+      } else {
+        alert('Error: ' + (data.error || 'Unknown error'));
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Save & Set as Active';
+      }
+    })
+    .catch(function() {
+      alert('Network error. Please try again.');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-save"></i> Save & Set as Active';
+    });
+  });
+
+  /* ── Init ── */
+  makeSortable(document.getElementById('root-list'));
+  if (INITIAL_TREE.length) importTree(INITIAL_TREE, document.getElementById('root-list'));
+  refreshEmpty();
+  updateCount();
+
+})();
+</script>
+{% endblock %}

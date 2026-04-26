@@ -1,0 +1,147 @@
+{% extends 'base/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block content %}
+<div style="max-width:800px;">
+  <div class="breadcrumb"><a href="{% url 'training_manage' %}">Manage Trainings</a><i class="fas fa-chevron-right" style="font-size:10px;"></i><span>{{ title }}</span></div>
+  <div class="card">
+    <div class="card-header"><h3>{{ title }}</h3></div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Training Code *</label>
+            <input type="text" name="code" class="form-control" value="{{ training.code|default:'' }}" placeholder="e.g. TRN-2024-001" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Training Title *</label>
+            <input type="text" name="title" class="form-control" value="{{ training.title|default:'' }}" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description *</label>
+          <textarea name="description" class="form-control" rows="4" required>{{ training.description|default:'' }}</textarea>
+        </div>
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label class="form-label">Training Type *</label>
+            <select name="training_type" class="form-control" required>
+              {% for val, label in types %}<option value="{{ val }}" {% if training.training_type == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Delivery Mode *</label>
+            <select name="delivery_mode" class="form-control" required>
+              {% for val, label in modes %}<option value="{{ val }}" {% if training.delivery_mode == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          {% if statuses %}
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-control">
+              {% for val, label in statuses %}<option value="{{ val }}" {% if training.status == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </div>
+          {% endif %}
+        </div>
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label class="form-label">Max Participants</label>
+            <input type="number" name="max_participants" class="form-control" value="{{ training.max_participants|default:30 }}" min="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Duration (hours)</label>
+            <input type="number" name="duration_hours" class="form-control" value="{{ training.duration_hours|default:8 }}" min="1" step="0.5">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Passing Score (%)</label>
+            <input type="number" name="passing_score" class="form-control" value="{{ training.passing_score|default:75 }}" min="1" max="100">
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Start Date</label>
+            <input type="text" name="start_date" class="form-control datepicker"
+                   value="{{ training.start_date|date:'Y-m-d'|default:'' }}"
+                   placeholder="YYYY-MM-DD"
+                   {% if not training %}data-prefill="{{ request.GET.start_date }}"{% endif %}>
+          </div>
+          <div class="form-group">
+            <label class="form-label">End Date</label>
+            <input type="text" name="end_date" class="form-control datepicker" value="{{ training.end_date|date:'Y-m-d'|default:'' }}" placeholder="YYYY-MM-DD">
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Venue / Platform</label>
+            <input type="text" name="venue" class="form-control" value="{{ training.venue|default:'' }}" placeholder="e.g. DOTR Training Room 1 / Zoom">
+          </div>
+          <div class="form-group">
+            <label class="form-label">External Provider</label>
+            <input type="text" name="provider" class="form-control" value="{{ training.provider|default:'' }}" placeholder="e.g. CSC, DAP, CHED">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Budget (PHP)</label>
+          <input type="number" name="budget" class="form-control" value="{{ training.budget|default:'' }}" placeholder="Leave blank if none" step="0.01">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cover Image</label>
+          <input type="file" name="cover_image" class="form-control" accept="image/*">
+        </div>
+        {% if cert_templates %}
+        <div class="form-group">
+          <label class="form-label">Certificate Template</label>
+          <select name="certificate_template" class="form-control">
+            <option value="">— Use globally active template —</option>
+            {% for tmpl in cert_templates %}
+            <option value="{{ tmpl.pk }}"
+              {% if training and training.certificate_template_id == tmpl.pk %}selected{% endif %}>
+              {{ tmpl.name }}{% if tmpl.is_active %} ★ Active{% endif %}
+              {% if tmpl.layout_type == 'modern' %} [Modern]{% else %} [Classic]{% endif %}
+            </option>
+            {% endfor %}
+          </select>
+          <small style="color:var(--text-muted);margin-top:4px;display:block;">
+            Assign a specific certificate template for this training program. Only takes effect if the template is active.
+          </small>
+        </div>
+        {% endif %}
+
+        {% if competencies %}
+        <div class="form-group">
+          <label class="form-label">Competencies Awarded on Completion</label>
+          <div style="border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;flex-wrap:wrap;gap:8px;max-height:200px;overflow-y:auto;">
+            {% for comp in competencies %}
+            <label style="display:flex;align-items:center;gap:6px;font-size:13px;background:var(--bg-main);padding:4px 10px;border-radius:6px;cursor:pointer;white-space:nowrap;">
+              <input type="checkbox" name="competencies" value="{{ comp.pk }}"
+                     {% if training and comp in training.competencies.all %}checked{% endif %}
+                     style="accent-color:var(--dotr-blue-light);">
+              <span><strong>{{ comp.code }}</strong> — {{ comp.name }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          <small style="color:var(--text-muted);margin-top:4px;display:block;">When an employee completes this training, their current level for the selected competencies will be incremented by 1.</small>
+        </div>
+        {% endif %}
+        <div style="display:flex;gap:12px;margin-top:8px;">
+          <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-save"></i> Save Training</button>
+          <a href="{% url 'training_manage' %}" class="btn btn-outline btn-lg">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+// Pre-fill start_date from calendar date-click
+document.addEventListener('DOMContentLoaded', function () {
+  const params = new URLSearchParams(window.location.search);
+  const sd = params.get('start_date');
+  if (sd) {
+    const el = document.querySelector('input[data-prefill]');
+    if (el && !el.value) el.value = sd;
+  }
+});
+</script>
+{% endblock %}

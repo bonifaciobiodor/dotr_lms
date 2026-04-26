@@ -1,0 +1,39 @@
+{% extends 'base/base.html' %}
+{% block title %}Audit Log{% endblock %}
+{% block page_title %}System Audit Log{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h3><i class="fas fa-history" style="color:var(--dotr-blue-light);margin-right:8px;"></i>Audit Log</h3>
+    <span class="badge badge-gray">{{ page_obj.paginator.count }} entries</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Module</th><th>Details</th><th>IP</th></tr></thead>
+      <tbody>
+        {% for log in page_obj %}
+        <tr>
+          <td style="font-size:12px;color:var(--text-muted);white-space:nowrap;">{{ log.timestamp|date:"M d, Y H:i" }}</td>
+          <td style="font-weight:600;font-size:13px;">{{ log.user.get_full_name|default:"System" }}</td>
+          <td><span class="badge {% if 'LOGIN' in log.action %}badge-green{% elif 'CREATE' in log.action %}badge-blue{% elif 'DELETE' in log.action %}badge-red{% else %}badge-gray{% endif %}">{{ log.action }}</span></td>
+          <td style="font-size:12px;color:var(--text-muted);">{{ log.model_name }}</td>
+          <td style="font-size:12.5px;color:var(--text-secondary);max-width:200px;">{{ log.details|default:"—"|truncatechars:60 }}</td>
+          <td style="font-size:12px;font-family:'DM Mono',monospace;color:var(--text-muted);">{{ log.ip_address|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6"><div class="empty-state"><i class="fas fa-history"></i><p>No audit log entries.</p></div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if page_obj.has_other_pages %}
+  <div style="padding:16px 20px;border-top:1px solid var(--border);">
+    <div class="pagination">
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="page-btn"><i class="fas fa-chevron-left"></i></a>{% endif %}
+      {% for num in page_obj.paginator.page_range %}{% if page_obj.number == num %}<span class="page-btn active">{{ num }}</span>{% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}<a href="?page={{ num }}" class="page-btn">{{ num }}</a>{% endif %}{% endfor %}
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="page-btn"><i class="fas fa-chevron-right"></i></a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

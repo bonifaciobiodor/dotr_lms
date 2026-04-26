@@ -1,0 +1,710 @@
+{% extends 'base/base.html' %}
+{% block title %}Job Analysis Form — {{ entry.full_name }}{% endblock %}
+{% block page_title %}Job Analysis Form{% endblock %}
+
+{% block content %}
+<style>
+  .jaf-print { max-width: 100%%; }
+  .jaf-section-header {
+    background: #1e3a8a; color: #fff; text-align: center;
+    padding: 9px 16px; font-weight: 700; font-size: 13.5px; letter-spacing: .3px;
+  }
+  .jaf-section-sub {
+    text-align: center; font-style: italic; font-size: 12px;
+    color: var(--text-secondary); padding: 4px 16px 10px; border-bottom: 1px solid var(--border);
+  }
+  .jaf-field-row { display: grid; grid-template-columns: 200px 1fr; border-bottom: 1px solid var(--border); }
+  .jaf-field-label { font-weight: 700; font-size: 13px; padding: 10px 14px; border-right: 1px solid var(--border); }
+  .jaf-field-value { padding: 10px 14px; font-size: 13.5px; }
+  .duty-table, .skill-table { width: 100%; border-collapse: collapse; }
+  .duty-table th, .duty-table td, .skill-table th, .skill-table td {
+    border: 1px solid var(--border); padding: 8px 10px; font-size: 13px;
+  }
+  .duty-table th, .skill-table th { background: #f1f5f9; font-weight: 700; text-align: center; font-size: 12px; }
+  .duty-table td.freq-col, .skill-table td.level-col { text-align: center; }
+  .check-mark { color: #1e3a8a; font-size: 16px; }
+  .timeline-bar { display: flex; align-items: center; gap: 0; margin: 20px 0 10px; flex-wrap: wrap; }
+  .timeline-step {
+    display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 120px;
+    position: relative;
+  }
+  .timeline-step:not(:last-child)::after {
+    content: ''; position: absolute; top: 18px; left: 60%; width: 80%; height: 2px;
+    background: var(--border); z-index: 0;
+  }
+  .timeline-step.done:not(:last-child)::after { background: #10b981; }
+  .step-dot {
+    width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 14px; font-weight: 700; z-index: 1;
+    border: 2px solid var(--border); background: #fff; color: var(--text-muted);
+  }
+  .timeline-step.done .step-dot { background: #10b981; color: #fff; border-color: #10b981; }
+  .timeline-step.active .step-dot { background: #2563eb; color: #fff; border-color: #2563eb; }
+  .timeline-step.rejected-step .step-dot { background: #ef4444; color: #fff; border-color: #ef4444; }
+  .step-label { font-size: 11.5px; margin-top: 6px; text-align: center; color: var(--text-secondary); font-weight: 600; }
+  .timeline-step.done .step-label { color: #065f46; }
+  .timeline-step.active .step-label { color: #1e40af; }
+  .timeline-step.rejected-step .step-label { color: #991b1b; }
+  @media print {
+    .no-print { display: none !important; }
+    .jaf-print { max-width: 100%; }
+    .jaf-page-wrap { display: block !important; }
+  }
+</style>
+
+{% if revision_comments %}
+<div class="jaf-page-wrap" style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;">
+{% else %}
+<div class="jaf-page-wrap">
+{% endif %}
+
+<div class="jaf-print">
+
+  <!-- Action bar -->
+  <div class="no-print" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+    <a href="{% url 'jaf_list' %}" class="btn btn-outline btn-sm">
+      <i class="fas fa-arrow-left"></i> Back to List
+    </a>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+
+      {% if can_edit %}
+      <a href="{% url 'jaf_edit' pk=entry.pk %}" class="btn btn-outline btn-sm">
+        <i class="fas fa-pen"></i> Edit
+      </a>
+      {% endif %}
+
+      {% if can_submit %}
+      <form method="post" action="{% url 'jaf_submit' pk=entry.pk %}"
+            onsubmit="return confirm('Submit and certify this form? It will be sent to your supervisor for review.');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary btn-sm">
+          <i class="fas fa-paper-plane"></i> Submit to Supervisor
+        </button>
+      </form>
+      {% endif %}
+
+      {% if can_start_supervisor_review %}
+      <form method="post" action="{% url 'jaf_supervisor_start_review' pk=entry.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;">
+          <i class="fas fa-eye"></i> Start Review
+        </button>
+      </form>
+      {% endif %}
+
+      {% if can_review %}
+      <a href="{% url 'jaf_review' pk=entry.pk %}" class="btn btn-gold btn-sm">
+        <i class="fas fa-tasks"></i> Fill Competencies &amp; Forward to HRDD
+      </a>
+      {% endif %}
+
+      {% if can_start_hrdd_review %}
+      <form method="post" action="{% url 'jaf_hrdd_start_review' pk=entry.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm" style="background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;">
+          <i class="fas fa-search"></i> Start HRDD Review
+        </button>
+      </form>
+      {% endif %}
+
+      {% if can_approve %}
+      <form method="post" action="{% url 'jaf_approve' pk=entry.pk %}"
+            onsubmit="return confirm('Approve this Job Analysis Form?');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary btn-sm">
+          <i class="fas fa-check-double"></i> Approve
+        </button>
+      </form>
+      {% endif %}
+
+      {% if can_reject %}
+      <button type="button" class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);"
+              onclick="document.getElementById('reject-modal').style.display='flex'">
+        <i class="fas fa-undo"></i> Return for Revision
+      </button>
+      {% endif %}
+
+      <!-- Export / Print dropdown -->
+      <div style="position:relative;display:inline-block;" id="export-wrap">
+        <button type="button" class="btn btn-outline btn-sm"
+                onclick="document.getElementById('export-menu').classList.toggle('open')"
+                style="display:flex;align-items:center;gap:6px;">
+          <i class="fas fa-file-export"></i> Export
+          <i class="fas fa-chevron-down" style="font-size:10px;"></i>
+        </button>
+        <div id="export-menu" style="
+            display:none;position:absolute;right:0;top:calc(100% + 6px);
+            background:#fff;border:1px solid var(--border);border-radius:8px;
+            box-shadow:0 4px 16px rgba(0,0,0,.1);min-width:170px;z-index:200;overflow:hidden;">
+          <a href="{% url 'jaf_export_pdf' pk=entry.pk %}"
+             style="display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:13px;color:#b91c1c;text-decoration:none;"
+             onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background=''">
+            <i class="fas fa-file-pdf" style="width:16px;"></i> Download PDF
+          </a>
+          <a href="{% url 'jaf_export_docx' pk=entry.pk %}"
+             style="display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:13px;color:#1d4ed8;text-decoration:none;border-top:1px solid var(--border);"
+             onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background=''">
+            <i class="fas fa-file-word" style="width:16px;"></i> Download DOCX
+          </a>
+          <a href="{% url 'jaf_export_html' pk=entry.pk %}"
+             style="display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:13px;color:#065f46;text-decoration:none;border-top:1px solid var(--border);"
+             onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''">
+            <i class="fas fa-file-code" style="width:16px;"></i> Download HTML
+          </a>
+          <div style="border-top:1px solid var(--border);"></div>
+          <button onclick="window.print();document.getElementById('export-menu').classList.remove('open');"
+                  style="display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:13px;color:var(--text-secondary);background:none;border:none;cursor:pointer;width:100%;"
+                  onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+            <i class="fas fa-print" style="width:16px;"></i> Print
+          </button>
+        </div>
+      </div>
+
+      {% if can_store %}
+      <form method="post" action="{% url 'jaf_store' pk=entry.pk %}"
+            onsubmit="return confirm('Store this JAF to the division folder?');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-sm"
+                style="background:#064e3b;color:#fff;border:1px solid #065f46;">
+          <i class="fas fa-archive"></i> Store
+        </button>
+      </form>
+      {% endif %}
+
+    </div>
+  </div>
+
+  <!-- Workflow timeline -->
+  <div class="no-print" style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;">
+    <div style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px;">Approval Progress</div>
+
+    {% if entry.supervisor_created %}
+    {# ── Supervisor-created path: Submitted by Supervisor → HRDD Review → Approved ── #}
+    <div class="timeline-bar">
+
+      <div class="timeline-step done">
+        <div class="step-dot"><i class="fas fa-user-edit"></i></div>
+        <div class="step-label">Draft<br><span style="font-weight:400;color:#6b7280;">Created by Supervisor</span></div>
+      </div>
+
+      <div class="timeline-step {% if entry.status in 'pending_hrdd,hrdd_review,approved' %}done{% elif entry.status == 'rejected' %}rejected-step{% endif %}">
+        <div class="step-dot">
+          {% if entry.status == 'rejected' %}<i class="fas fa-undo"></i>
+          {% else %}<i class="fas fa-paper-plane"></i>{% endif %}
+        </div>
+        <div class="step-label">
+          {% if entry.status == 'rejected' %}Returned<br>for Revision
+          {% else %}Submitted by<br>Supervisor{% endif %}
+        </div>
+      </div>
+
+      <div class="timeline-step {% if entry.status == 'approved' %}done{% elif entry.status in 'pending_hrdd,hrdd_review' %}active{% endif %}">
+        <div class="step-dot"><i class="fas fa-search"></i></div>
+        <div class="step-label">HRDD<br>Review</div>
+      </div>
+
+      <div class="timeline-step {% if entry.status == 'approved' %}done{% endif %}">
+        <div class="step-dot"><i class="fas fa-check-double"></i></div>
+        <div class="step-label">Approved</div>
+      </div>
+
+    </div>
+
+    {% else %}
+    {# ── Employee-created path: Draft → Submitted → Supervisor Review → HRDD Review → Approved ── #}
+    <div class="timeline-bar">
+
+      <div class="timeline-step {% if entry.status != 'draft' %}done{% else %}active{% endif %}">
+        <div class="step-dot"><i class="fas fa-pen"></i></div>
+        <div class="step-label">Draft<br><span style="font-weight:400;color:#6b7280;">By Employee</span></div>
+      </div>
+
+      <div class="timeline-step {% if entry.status in 'supervisor_review,pending_hrdd,hrdd_review,approved' %}done{% elif entry.status == 'submitted' %}active{% elif entry.status == 'rejected' %}rejected-step{% endif %}">
+        <div class="step-dot">
+          {% if entry.status == 'rejected' %}<i class="fas fa-undo"></i>
+          {% else %}<i class="fas fa-paper-plane"></i>{% endif %}
+        </div>
+        <div class="step-label">
+          {% if entry.status == 'rejected' %}Returned<br>for Revision
+          {% else %}Submitted<br>to Supervisor{% endif %}
+        </div>
+      </div>
+
+      <div class="timeline-step {% if entry.status in 'pending_hrdd,hrdd_review,approved' %}done{% elif entry.status == 'supervisor_review' %}active{% endif %}">
+        <div class="step-dot"><i class="fas fa-tasks"></i></div>
+        <div class="step-label">Supervisor<br>Review</div>
+      </div>
+
+      <div class="timeline-step {% if entry.status == 'approved' %}done{% elif entry.status in 'pending_hrdd,hrdd_review' %}active{% endif %}">
+        <div class="step-dot"><i class="fas fa-search"></i></div>
+        <div class="step-label">HRDD<br>Review</div>
+      </div>
+
+      <div class="timeline-step {% if entry.status == 'approved' %}done{% endif %}">
+        <div class="step-dot"><i class="fas fa-check-double"></i></div>
+        <div class="step-label">Approved</div>
+      </div>
+
+    </div>
+    {% endif %}
+
+    <!-- Reviewer / Approver attribution -->
+    <div style="display:flex;gap:24px;font-size:12px;color:var(--text-secondary);flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+      {% if entry.supervisor_created and entry.reviewed_by %}
+      <span><i class="fas fa-user-edit" style="color:#2563eb;margin-right:4px;"></i>
+        Created &amp; submitted by <strong>{{ entry.reviewed_by.get_full_name }}</strong> on {{ entry.reviewed_date|date:"M d, Y" }}
+      </span>
+      {% elif entry.reviewed_by %}
+      <span><i class="fas fa-user-check" style="color:#2563eb;margin-right:4px;"></i>
+        Reviewed by <strong>{{ entry.reviewed_by.get_full_name }}</strong> on {{ entry.reviewed_date|date:"M d, Y" }}
+      </span>
+      {% endif %}
+      {% if entry.certified_date and not entry.supervisor_created %}
+      <span><i class="fas fa-signature" style="color:#6b7280;margin-right:4px;"></i>
+        Certified by employee on {{ entry.certified_date|date:"M d, Y" }}
+      </span>
+      {% endif %}
+      {% if entry.approved_by %}
+      <span><i class="fas fa-check-double" style="color:#10b981;margin-right:4px;"></i>
+        Approved by <strong>{{ entry.approved_by.get_full_name }}</strong> on {{ entry.approved_date|date:"M d, Y" }}
+      </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Form content -->
+  <div class="card" style="padding:0;overflow:hidden;">
+
+    <!-- DOTr header -->
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 20px;border-bottom:2px solid var(--border);">
+      <div style="display:flex;gap:10px;align-items:center;">
+        <img src="/static/img/DOTr.png" alt="DOTr" style="height:52px;object-fit:contain;" onerror="this.style.display='none'">
+        <img src="/static/img/BPLogo.png" alt="" style="height:72px;object-fit:contain;" onerror="this.style.display='none'">
+      </div>
+      <div>
+        <div style="font-size:12px;">Republic of the Philippines</div>
+        <div style="font-weight:800;font-size:14px;letter-spacing:.5px;">DEPARTMENT OF TRANSPORTATION</div>
+      </div>
+    </div>
+    <div style="background:#1e3a8a;color:#fff;text-align:center;padding:12px;font-size:17px;font-weight:800;letter-spacing:.5px;">
+      JOB ANALYSIS FORM
+    </div>
+      <div style="padding:0px 16px;border-bottom:2px solid var(--border); font-size:14px;white-space:pre-line;min-height:80px;line-height:1.7;">
+        <p style="font-weight: bold; margin-top: -15px; margin-bottom: -10px;">Introduction</p>
+        <p style="text-align: justify;">This form is intended to gather comprehensive information on the job roles, responsibilities, and required competencies of employees within a specific office, service, or division. The data collected will primarily support competency framework validation and also serve as a reference for other human resource functions such as workforce planning, training needs analysis, and performance management.</p>
+        <p style="font-weight: bold; margin-top: -10px; margin-bottom: -25px;">Objectives</p>
+        <ul style="margin-top: -10px; margin-bottom: -25px; margin-left: 25px;">
+          <li style="margin-top: -10px; margin-bottom: -10px;">Document the main and secondary responsibilities of each position.</li>
+          <li style="margin-top: -10px; margin-bottom: -10px;">Identify skills and proficiency levels required for effective performance.</li>
+          <li style="margin-top: -10px; margin-bottom: -10px;">Provide a basis for competency gap analysis and targeted development programs.</li>
+          <li style="margin-top: -10px; margin-bottom: -10px;">Ensure alignment between job roles and organizational objectives.</li>
+      </ul>
+      </div>
+
+    <!-- Header fields -->
+    <div class="jaf-field-row"><div class="jaf-field-label">Full Name</div><div class="jaf-field-value">{{ entry.full_name }}</div></div>
+    <div class="jaf-field-row"><div class="jaf-field-label">Position Title</div><div class="jaf-field-value">{{ entry.position_title }}</div></div>
+    <div class="jaf-field-row"><div class="jaf-field-label">Office/Service/Division</div><div class="jaf-field-value">{{ entry.office_service_division|default:"—" }}</div></div>
+    <div class="jaf-field-row"><div class="jaf-field-label">Section/Project/Unit</div><div class="jaf-field-value">{{ entry.section_project_unit|default:"—" }}</div></div>
+    <div class="jaf-field-row" style="border-bottom:2px solid var(--border);"><div class="jaf-field-label">Alternate Position</div><div class="jaf-field-value">{{ entry.alternate_position|default:"—" }}</div></div>
+
+    <!-- Job Purpose -->
+    <div class="jaf-section-header">JOB PURPOSE</div>
+    <div class="jaf-section-sub">Brief Description of the general function and purpose of the position.</div>
+    <div style="padding:14px 16px;border-bottom:2px solid var(--border);font-size:13.5px;white-space:pre-line;min-height:60px;line-height:1.7;">
+      {{ entry.job_purpose|default:"—" }}
+    </div>
+
+    <!-- Main Duties -->
+    <div class="jaf-section-header">MAIN DUTIES AND RESPONSIBILITIES</div>
+    <div style="padding:0px 16px;border-bottom:2px solid var(--border); font-size:14px;white-space:pre-line;min-height:80px;line-height:1.7;">
+    <p style="margin-top: -15px; margin-bottom: -25px; text-align: justify;">This section provides a detailed outline of the primary tasks, functions, and obligations associated with the position. It defines the key activities that the employee is expected to perform to achieve the objectives of the role. These responsibilities should be specific, measurable, and aligned with the overall goals of the organization.</p>
+    </div>
+    <div style="padding:14px 16px;border-bottom:2px solid var(--border);font-size:13.5px;white-space:pre-line;min-height:80px;line-height:1.7;">
+      {{ entry.main_duties|default:"—" }}
+    </div>
+
+    <!-- Secondary Duties -->
+    <div class="jaf-section-header">SECONDARY DUTIES &amp; RESPONSIBILITIES</div>
+       <div style="padding:0px 16px;border-bottom:2px solid var(--border); font-size:14px;white-space:pre-line;min-height:80px;line-height:1.7;">
+    <p style="margin-top: -15px; margin-bottom: -25px; text-align: justify;">This section lists additional duties that support the main responsibilities of the position. These tasks are not the primary focus of the role but are necessary to ensure smooth operations and assist in achieving departmental or organizational objectives. They may include occasional assignments, administrative support, or other related activities as required.
+</p>
+    </div>
+    <div style="padding:14px;border-bottom:2px solid var(--border);">
+      {% if secondary_duties %}
+      <table class="duty-table">
+        <thead>
+          <tr>
+            <th style="width:5%;">NO.</th>
+            <th style="width:52%;">TASKS</th>
+            <th class="freq-col" style="width:9%;">Daily</th>
+            <th class="freq-col" style="width:9%;">Weekly</th>
+            <th class="freq-col" style="width:9%;">Monthly</th>
+            <th class="freq-col" style="width:9%;">Quarterly</th>
+            <th class="freq-col" style="width:13%;">Periodically / As Instructed</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in secondary_duties %}
+          <tr>
+            <td style="text-align:center;color:var(--text-muted);">{{ forloop.counter }}</td>
+            <td>{{ d.task }}</td>
+            <td class="freq-col">{% if d.frequency == 'daily' %}<span class="check-mark">&#10003;</span>{% endif %}</td>
+            <td class="freq-col">{% if d.frequency == 'weekly' %}<span class="check-mark">&#10003;</span>{% endif %}</td>
+            <td class="freq-col">{% if d.frequency == 'monthly' %}<span class="check-mark">&#10003;</span>{% endif %}</td>
+            <td class="freq-col">{% if d.frequency == 'quarterly' %}<span class="check-mark">&#10003;</span>{% endif %}</td>
+            <td class="freq-col">{% if d.frequency == 'periodically' %}<span class="check-mark">&#10003;</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="font-size:13px;color:var(--text-muted);text-align:center;padding:12px;">No secondary duties recorded.</p>
+      {% endif %}
+    </div>
+
+    <!-- Required Competencies -->
+    <div class="jaf-section-header">REQUIRED COMPETENCIES</div>
+       <div style="padding:0px 16px;border-bottom:2px solid var(--border); font-size:14px;white-space:pre-line;min-height:80px;line-height:1.7;">
+    <p style="margin-top: -15px; margin-bottom: -25px; text-align: justify;">This outlines the fundamental abilities, knowledge, and competencies required to perform the duties of the position effectively. These skills are critical for achieving job objectives and ensuring successful performance. Typically, it includes technical, behavioral, and leadership/managerial skills (if applicable) necessary for the role.
+</p>
+    </div>
+    {# ── Sub-header note ── #}
+    <div style="padding:8px 14px 10px;font-size:12px;color:var(--text-secondary);border-bottom:1px solid var(--border);font-style:italic;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+      <span>Note: To be filled by the immediate supervisor / division chief</span>
+      {% if entry.status in 'draft,submitted,supervisor_review' %}
+        {% if not required_skills %}
+        <span style="background:#fef3c7;color:#92400e;padding:2px 10px;border-radius:20px;font-size:11.5px;font-weight:700;font-style:normal;">
+          <i class="fas fa-clock"></i> Pending Supervisor Review
+        </span>
+        {% endif %}
+      {% elif entry.status in 'pending_hrdd,hrdd_review,approved' and entry.reviewed_by %}
+      <span style="font-style:normal;font-size:12px;color:var(--text-secondary);">
+        <i class="fas fa-user-check" style="color:#2563eb;margin-right:4px;"></i>
+        Filled by <strong>{{ entry.reviewed_by.get_full_name }}</strong>
+        {% if entry.reviewed_date %}on {{ entry.reviewed_date|date:"M d, Y" }}{% endif %}
+      </span>
+      {% endif %}
+    </div>
+
+    {# ── HRDD visibility highlight banner ── #}
+    {% if entry.status in 'pending_hrdd,hrdd_review' and required_skills %}
+    <div style="background:#eff6ff;border-bottom:1px solid #bfdbfe;padding:10px 16px;display:flex;align-items:center;gap:8px;font-size:13px;color:#1e40af;">
+      <i class="fas fa-info-circle"></i>
+      <span>The supervisor has recorded <strong>{{ required_skills|length }} required competenc{{ required_skills|length|pluralize:"y,ies" }}</strong> for this position. Please review before approving.</span>
+    </div>
+    {% endif %}
+
+    <div style="padding:14px;border-bottom:2px solid var(--border);">
+      {% if required_skills %}
+      <table class="skill-table">
+        <thead>
+          <tr>
+            <th style="width:4%;">NO.</th>
+            <th style="width:22%;">CATEGORY</th>
+            <th style="width:34%;">COMPETENCY</th>
+            <th class="level-col" style="width:10%;">BASIC</th>
+            <th class="level-col" style="width:10%;">INTERMEDIATE</th>
+            <th class="level-col" style="width:10%;">ADVANCED</th>
+            <th class="level-col" style="width:10%;">SUPERIOR</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in required_skills %}
+          <tr {% if entry.status in 'pending_hrdd,hrdd_review' %}style="background:{% cycle '#ffffff' '#f8fafc' %}"{% endif %}>
+            <td style="text-align:center;color:var(--text-muted);">{{ forloop.counter }}</td>
+            <td>
+              {% if s.competency %}
+                {% with cat=s.competency.category %}
+                <span style="display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;
+                  {% if cat == 'core' %}background:#dbeafe;color:#1e40af;
+                  {% elif cat == 'leadership' %}background:#ede9fe;color:#5b21b6;
+                  {% elif cat == 'technical' %}background:#d1fae5;color:#065f46;
+                  {% else %}background:#fef3c7;color:#92400e;{% endif %}">
+                  {{ s.competency.get_category_display }}
+                </span>
+                {% endwith %}
+              {% else %}
+              <span style="color:var(--text-muted);font-size:12px;">—</span>
+              {% endif %}
+            </td>
+            <td style="font-weight:600;font-size:13px;">
+              {{ s.competency.name|default:s.skill_name }}
+              {% if s.competency.description %}
+              <div style="font-weight:400;font-size:11.5px;color:var(--text-muted);margin-top:2px;">{{ s.competency.description|truncatechars:70 }}</div>
+              {% endif %}
+            </td>
+            <td class="level-col">
+              {% if s.proficiency_level == 'basic' %}
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#1e3a8a;border-radius:50%;">
+                <span style="color:#fff;font-size:14px;font-weight:700;">&#10003;</span>
+              </span>
+              {% endif %}
+            </td>
+            <td class="level-col">
+              {% if s.proficiency_level == 'intermediate' %}
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#1e3a8a;border-radius:50%;">
+                <span style="color:#fff;font-size:14px;font-weight:700;">&#10003;</span>
+              </span>
+              {% endif %}
+            </td>
+            <td class="level-col">
+              {% if s.proficiency_level == 'advanced' %}
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#1e3a8a;border-radius:50%;">
+                <span style="color:#fff;font-size:14px;font-weight:700;">&#10003;</span>
+              </span>
+              {% endif %}
+            </td>
+            <td class="level-col">
+              {% if s.proficiency_level == 'superior' %}
+              <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;background:#1e3a8a;border-radius:50%;">
+                <span style="color:#fff;font-size:14px;font-weight:700;">&#10003;</span>
+              </span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="font-size:13px;color:var(--text-muted);text-align:center;padding:16px;">
+        {% if entry.status in 'submitted,supervisor_review' %}
+        <i class="fas fa-clock" style="margin-right:4px;"></i> Awaiting supervisor to fill in this section.
+        {% else %}
+        No competencies recorded.
+        {% endif %}
+      </p>
+      {% endif %}
+    </div>
+
+    <!-- Tools and Equipment -->
+    <div class="jaf-section-header">TOOLS AND EQUIPMENT</div>
+    <div class="jaf-section-sub">List any tools, equipment, or software regularly used.</div>
+    <div style="padding:14px;border-bottom:2px solid var(--border);">
+      {% if tools %}
+      <ol style="margin:0;padding-left:20px;font-size:13.5px;line-height:2;">
+        {% for t in tools %}<li>{{ t.name }}</li>{% endfor %}
+      </ol>
+      {% else %}
+      <p style="font-size:13px;color:var(--text-muted);text-align:center;padding:12px;">No tools recorded.</p>
+      {% endif %}
+    </div>
+
+    <!-- Challenges -->
+    <div class="jaf-section-header">CHALLENGES AND CRITICAL ISSUES</div>
+    <div style="padding:14px 16px;border-bottom:2px solid var(--border);font-size:13.5px;white-space:pre-line;min-height:60px;line-height:1.7;">
+      {{ entry.challenges_critical_issues|default:"—" }}
+    </div>
+
+    <!-- Additional Comments -->
+    <div class="jaf-section-header">ADDITIONAL COMMENTS</div>
+    <div style="padding:14px 16px;border-bottom:1px solid var(--border);font-size:13.5px;white-space:pre-line;min-height:50px;line-height:1.7;">
+      {{ entry.additional_comments|default:"—" }}
+    </div>
+    <div style="padding:8px 14px;font-size:12px;color:var(--text-secondary);border-bottom:1px solid var(--border);">
+      Note: You may incorporate additional rows beyond the provided minimum.
+    </div>
+
+    <!-- Certification -->
+    <div style="padding:16px;border-bottom:1px solid var(--border);font-size:13px;line-height:1.9;">
+      <p>I hereby certify that all information and statements provided herewith are accurate. I further attest that these details truthfully reflect my current knowledge and understanding.</p>
+      <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+          <div style="border-bottom:1px solid #000;height:28px;">
+            {% if entry.certified_date %}<span style="font-style:italic;font-size:12.5px;color:var(--text-secondary);">{{ entry.full_name }}</span>{% endif %}
+          </div>
+          <div style="font-size:12px;margin-top:4px;">Signature over Printed Name</div>
+        </div>
+        <div>
+          <div style="border-bottom:1px solid #000;height:28px;">
+            {% if entry.certified_date %}<span style="font-size:12.5px;">{{ entry.certified_date|date:"F d, Y" }}</span>{% endif %}
+          </div>
+          <div style="font-size:12px;margin-top:4px;">Date</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Approval block — shown once HRDD approves -->
+    {% if entry.status == 'approved' and entry.approved_by %}
+    <div style="padding:16px;background:#f0fdf4;border-top:2px solid #bbf7d0;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#166534;margin-bottom:14px;">
+        <i class="fas fa-check-double" style="margin-right:5px;"></i> HRDD Approval
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;font-size:13px;">
+        <div>
+          <div style="border-bottom:1px solid #86efac;height:28px;">
+            <span style="font-style:italic;color:#166534;">{{ entry.approved_by.get_full_name }}</span>
+          </div>
+          <div style="font-size:12px;margin-top:4px;color:#166534;">Approved by</div>
+        </div>
+        <div>
+          <div style="border-bottom:1px solid #86efac;height:28px;">
+            <span style="font-size:12.5px;color:#166534;">{{ entry.approved_date|date:"F d, Y" }}</span>
+          </div>
+          <div style="font-size:12px;margin-top:4px;color:#166534;">Date Approved</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+  </div><!-- /.card -->
+</div><!-- /.jaf-print -->
+
+{% if revision_comments %}
+<!-- Right panel: Revision audit trail (screen only, hidden in print) -->
+<div class="no-print" style="position:sticky;top:20px;">
+  <div style="background:#fff;border:1.5px solid #fca5a5;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px rgba(239,68,68,.10);">
+
+    <!-- Panel header -->
+    <div style="background:#dc2626;padding:11px 16px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <i class="fas fa-history" style="color:#fff;font-size:13px;"></i>
+        <span style="color:#fff;font-weight:700;font-size:13.5px;">Revision Comments</span>
+      </div>
+      <span style="background:rgba(255,255,255,.25);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">
+        {{ revision_comments|length }} comment{{ revision_comments|length|pluralize }}
+      </span>
+    </div>
+
+    <!-- Status tag -->
+    <div style="padding:8px 14px;border-bottom:1px solid #fee2e2;font-size:11.5px;color:#7f1d1d;background:#fff5f5;">
+      <i class="fas fa-info-circle" style="margin-right:4px;"></i>
+      {% if entry.status == 'approved' %}
+        Form approved — comments kept for audit trail.
+      {% elif entry.status == 'rejected' %}
+        Form returned for revision. Please address all comments.
+      {% else %}
+        Revision history for this form.
+      {% endif %}
+    </div>
+
+    <!-- Comment list -->
+    <div id="comment-list" style="max-height:480px;overflow-y:auto;">
+      {% for c in revision_comments %}
+      <div class="revision-entry{% if forloop.counter > 2 %} comment-extra{% endif %}"
+           style="padding:12px 14px;border-bottom:1px solid #fee2e2;{% if forloop.counter > 2 %}display:none;{% endif %}">
+
+        <!-- Meta row -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:4px;">
+          <span style="font-size:11.5px;font-weight:700;color:#991b1b;">
+            <i class="fas fa-user-tie" style="margin-right:3px;"></i>
+            {{ c.commented_by.get_full_name|default:"HRDD" }}
+          </span>
+          <span style="font-size:11px;color:#b91c1c;white-space:nowrap;">
+            {{ c.commented_at|date:"M d, Y" }}
+          </span>
+        </div>
+
+        <!-- Comment round badge -->
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <span style="background:#fef2f2;border:1px solid #fca5a5;border-radius:20px;font-size:10.5px;font-weight:700;color:#dc2626;padding:1px 8px;">
+            Round {{ forloop.counter }}
+          </span>
+        </div>
+
+        <!-- Comment text -->
+        <div style="font-size:13px;color:#450a0a;line-height:1.7;white-space:pre-line;background:#fff;border:1px solid #fecaca;border-radius:7px;padding:10px 12px;">{{ c.comment }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Toggle button (only when > 2 comments) -->
+    {% if revision_comments|length > 2 %}
+    <div style="padding:10px 14px;border-top:1px solid #fee2e2;text-align:center;">
+      <button id="toggle-comments-btn" type="button"
+              onclick="toggleRevisionComments()"
+              style="background:none;border:1px solid #fca5a5;border-radius:20px;padding:5px 18px;font-size:12px;font-weight:700;color:#dc2626;cursor:pointer;">
+        <i class="fas fa-chevron-down" id="toggle-icon"></i>
+        <span id="toggle-label">Show {{ revision_comments|length|add:"-2" }} more</span>
+      </button>
+    </div>
+    {% endif %}
+
+    <!-- Action prompt (only when returned) -->
+    {% if entry.status == 'rejected' %}
+    <div style="padding:10px 14px 14px;">
+      {% if can_edit %}
+      <a href="{% url 'jaf_edit' pk=entry.pk %}" class="btn btn-primary btn-sm"
+         style="width:100%;justify-content:center;background:#dc2626;border-color:#dc2626;">
+        <i class="fas fa-pen"></i> Edit &amp; Revise Form
+      </a>
+      {% else %}
+      <div style="background:#fef2f2;border-radius:8px;padding:9px 12px;font-size:12px;color:#7f1d1d;line-height:1.6;">
+        <i class="fas fa-info-circle" style="margin-right:4px;"></i>
+        Please address the comments and re-submit this form.
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endif %}
+
+</div><!-- /.jaf-page-wrap -->
+
+<!-- Reject / Return modal -->
+{% if can_reject %}
+<div id="reject-modal"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;padding:28px;max-width:480px;width:90%;box-shadow:var(--shadow-lg);">
+    <h3 style="font-size:16px;font-weight:700;margin-bottom:4px;"><i class="fas fa-undo" style="color:var(--danger);margin-right:6px;"></i> Return for Revision</h3>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">
+      Provide a comment explaining what needs to be revised. The employee will be able to edit and re-submit.
+    </p>
+    <form method="post" action="{% url 'jaf_reject' pk=entry.pk %}">
+      {% csrf_token %}
+      <textarea name="rejection_comment" class="form-control" rows="4" required
+        placeholder="e.g. Please clarify duties 3 and 5, and ensure all required competencies are listed."></textarea>
+      <div style="display:flex;gap:10px;margin-top:16px;">
+        <button type="submit" class="btn btn-primary" style="background:var(--danger);border-color:var(--danger);">
+          <i class="fas fa-undo"></i> Return Form
+        </button>
+        <button type="button" class="btn btn-outline"
+                onclick="document.getElementById('reject-modal').style.display='none'">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<script>
+// Export dropdown: inject override style so .open class beats inline display:none
+(function() {
+  var style = document.createElement('style');
+  style.textContent = '#export-menu.open { display: block !important; }';
+  document.head.appendChild(style);
+}());
+// Close export dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  var wrap = document.getElementById('export-wrap');
+  var menu = document.getElementById('export-menu');
+  if (wrap && menu && !wrap.contains(e.target)) {
+    menu.classList.remove('open');
+  }
+});
+</script>
+
+{% if revision_comments|length > 2 %}
+<script>
+(function () {
+  var expanded = false;
+  window.toggleRevisionComments = function () {
+    expanded = !expanded;
+    var extras = document.querySelectorAll('.comment-extra');
+    var icon   = document.getElementById('toggle-icon');
+    var label  = document.getElementById('toggle-label');
+    extras.forEach(function (el) { el.style.display = expanded ? '' : 'none'; });
+    if (expanded) {
+      icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+      label.textContent = 'Show less';
+    } else {
+      icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
+      label.textContent = 'Show {{ revision_comments|length|add:"-2" }} more';
+    }
+  };
+}());
+</script>
+{% endif %}
+
+{% endblock %}
